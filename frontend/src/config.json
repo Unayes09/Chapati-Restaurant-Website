@@ -1,0 +1,163 @@
+{
+  "restaurantName": "Chapati",
+  "colors": {
+    "primary": "#E63946",
+    "secondary": "#FFB703",
+    "dark": "#000000",
+    "light": "#FFFFFF"
+  },
+  "translations": {
+    "fr": {
+      "navbar": {
+        "home": "ACCUEIL",
+        "menu": "LA CARTE",
+        "foodTruck": "FOOD TRUCK",
+        "contact": "CONTACT",
+        "delivery": "LIVRAISON",
+        "order": "COMMANDER"
+      },
+      "hero": {
+        "title": "RESTAURANT DE STREET FOOD INDIENNE",
+        "subtitle": "À EMPORTER & EN LIVRAISON à Bussy Saint Georges",
+        "order": "COMMANDER"
+      },
+      "concept": {
+        "label": "concept",
+        "title": "Cuisine indienne de qualité",
+        "description": "Chez Chapati à Bussy St Georges, découvrez une savoureuse cuisine indienne. L’instant d’un déjeuner ou d’un diner, l’expérience est tentante pour qui est à la recherche d’une expérience culinaire dépaysante. Nos recettes sont 100% fait maison."
+      },
+      "menu": {
+        "label": "MENU",
+        "title": "NOTRE CARTE",
+        "subtitle": "Ingrédients de qualité, goût original",
+        "description": "La carte revisite les classiques de la cuisine indienne avec touche d'originalité aux saveurs étonnantes et des accompagnements tous aussi originaux.",
+        "categories": {
+          "main": "Curry & Biryanis & Naans",
+          "sub": "Voyagez en Inde à travers nos spécialités"
+        },
+        "items": [
+          { "title": "Découvrez nos Biryanis", "button": "COMMANDER" },
+          { "title": "Découvrez nos Curry", "button": "COMMANDER" },
+          { "title": "Découvrez nos Naans", "button": "COMMANDER" }
+        ]
+      },
+      "testimonials": {
+        "title": "avis clients",
+        "reviews": [
+          {
+            "text": "Parfait et délicieux ! Une dinguerie stratosphérique, les plats sont généreux et très bon ! L'attente pour manger est rapide et les ingrédients sont de qualités.",
+            "author": "Océane G"
+          },
+          {
+            "text": "Un très bon repas à emporter, les portions sont copieuses et les assaisonnements sont excellents ! Je recommande ce restaurant.",
+            "author": "Julien R"
+          },
+          {
+            "text": "Le curry tikka massala était très bon. En termes de quantité (curry +riz + naan) c'était assez copieux. J'y retournerai avec plaisir.",
+            "author": "Sylvie L"
+          }
+        ]
+      },
+      "contact": {
+        "title": "CONTACT",
+        "fields": {
+          "name": "Nom *",
+          "email": "Email *",
+          "phone": "Numbers",
+          "message": "Your Message *",
+          "send": "ENVOYER"
+        },
+        "info": {
+          "title": "INFOS UTILES",
+          "phone": "01 72 99 22 98",
+          "email": "contact@chapati.fr",
+          "address": "14 bis Rue Paul Delouvrier, 77600 Bussy-Saint-Georges"
+        }
+      },
+      "footer": {
+        "description": "Chapati vous propose des spécialités indiennes 100% fait maison. Nos spécialités sont disponibles à emporter et en livraison.",
+        "payment": {
+          "title": "MOYENS DE PAIEMENT",
+          "methods": ["Espèces", "Carte Bleu", "Tickets resto"]
+        },
+        "copyright": "Copyright © 2026 Chapati | Réalisé par DIGIWELL FOOD"
+      }
+    },
+    "en": {
+      "navbar": {
+        "home": "HOME",
+        "menu": "MENU",
+        "foodTruck": "FOOD TRUCK",
+        "contact": "CONTACT",
+        "delivery": "DELIVERY",
+        "order": "ORDER"
+      },
+      "hero": {
+        "title": "INDIAN STREET FOOD RESTAURANT",
+        "subtitle": "TAKEAWAY & DELIVERY in Bussy Saint Georges",
+        "order": "ORDER"
+      },
+      "concept": {
+        "label": "concept",
+        "title": "Quality Indian Cuisine",
+        "description": "At Chapati in Bussy St Georges, discover a savory Indian cuisine. For a lunch or a dinner, the experience is tempting for those looking for an exotic culinary experience. Our recipes are 100% homemade."
+      },
+      "menu": {
+        "label": "MENU",
+        "title": "OUR MENU",
+        "subtitle": "Quality ingredients, original taste",
+        "description": "The menu revisits the classics of Indian cuisine with a touch of originality with amazing flavors and equally original side dishes.",
+        "categories": {
+          "main": "Curry & Biryanis & Naans",
+          "sub": "Travel to India through our specialties"
+        },
+        "items": [
+          { "title": "Discover our Biryanis", "button": "ORDER" },
+          { "title": "Discover our Curries", "button": "ORDER" },
+          { "title": "Discover our Naans", "button": "ORDER" }
+        ]
+      },
+      "testimonials": {
+        "title": "customer reviews",
+        "reviews": [
+          {
+            "text": "Perfect and delicious! A stratospheric madness, the dishes are generous and very good! The wait for food is fast and the ingredients are of quality.",
+            "author": "Océane G"
+          },
+          {
+            "text": "A very good takeaway meal, the portions are hearty and the seasonings are excellent! I recommend this restaurant.",
+            "author": "Julien R"
+          },
+          {
+            "text": "The tikka masala curry was very good. In terms of quantity (curry + rice + naan) it was quite hearty. I will return with pleasure.",
+            "author": "Sylvie L"
+          }
+        ]
+      },
+      "contact": {
+        "title": "CONTACT",
+        "fields": {
+          "name": "Name *",
+          "email": "Email *",
+          "phone": "Numbers",
+          "message": "Your Message *",
+          "send": "SEND"
+        },
+        "info": {
+          "title": "USEFUL INFO",
+          "phone": "01 72 99 22 98",
+          "email": "contact@chapati.fr",
+          "address": "14 bis Rue Paul Delouvrier, 77600 Bussy-Saint-Georges"
+        }
+      },
+      "footer": {
+        "description": "Chapati offers you 100% homemade Indian specialties. Our specialties are available for takeaway and delivery.",
+        "payment": {
+          "title": "PAYMENT METHODS",
+          "methods": ["Cash", "Blue Card", "Resto Tickets"]
+        },
+        "copyright": "Copyright © 2026 Chapati | Realized by DIGIWELL FOOD"
+      }
+    }
+  }
+}
