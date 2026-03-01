@@ -13,7 +13,10 @@ const Partners = () => {
         <div className="partners-grid">
           <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Uber_Eats_2020_logo.svg" alt="Uber Eats" className="partner-logo uber-eats" />
           <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" alt="Google" className="partner-logo google" />
-          <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png" alt="Facebook" className="partner-logo facebook" />
+          <div className="partner-facebook">
+            <span className="facebook-circle">f</span>
+            <span className="facebook-text">Facebook</span>
+          </div>
         </div>
       </div>
     </section>

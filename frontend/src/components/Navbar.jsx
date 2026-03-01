@@ -16,21 +16,44 @@ const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  const handleHomeClick = (e) => {
+    e.preventDefault();
+    const url = new URL(window.location.origin + window.location.pathname);
+    window.location.href = url.toString();
+    closeMenu();
+  };
+
+  const handleMenuClick = (e) => {
+    e.preventDefault();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 'fullmenu');
+    window.location.href = url.toString();
+    closeMenu();
+  };
+
+  const handleSectionClick = (e, sectionId) => {
+    e.preventDefault();
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.hash = sectionId;
+    window.location.href = url.toString();
+    closeMenu();
+  };
+
   return (
     <nav className="navbar">
       <div className="container nav-container">
         <div className="logo-container">
-          <img src={logo} alt="Chapati Logo" className="logo" />
+          <img src={logo} alt="Chapati Logo" className="logo" onClick={handleHomeClick} style={{ cursor: 'pointer' }} />
         </div>
 
         <div className={`nav-menu ${isMenuOpen ? 'open' : ''}`}>
           <ul className="nav-links">
-            <li><a href="#home" className="active" onClick={closeMenu}>{t.navbar.home}</a></li>
-            <li><a href="#menu" onClick={closeMenu}>{t.navbar.menu}</a></li>
-            <li><a href="#foodtruck" onClick={closeMenu}>{t.navbar.foodTruck}</a></li>
-            <li><a href="#contact" onClick={closeMenu}>{t.navbar.contact}</a></li>
+            <li><a href="/" className="active" onClick={handleHomeClick}>{t.navbar.home}</a></li>
+            <li><a href="#menu" onClick={handleMenuClick}>{t.navbar.menu}</a></li>
+            <li><a href="#foodtruck" onClick={(e) => handleSectionClick(e, 'foodtruck')}>{t.navbar.foodTruck}</a></li>
+            <li><a href="#contact" onClick={(e) => handleSectionClick(e, 'contact')}>{t.navbar.contact}</a></li>
             <li>
-              <a href="#delivery" className="has-dropdown" onClick={closeMenu}>
+              <a href="#delivery" className="has-dropdown" onClick={(e) => handleSectionClick(e, 'delivery')}>
                 {t.navbar.delivery}
                 <span className="dropdown-arrow">⌄</span>
               </a>

@@ -18,13 +18,13 @@
       },
       "hero": {
         "title": "RESTAURANT DE STREET FOOD INDIENNE",
-        "subtitle": "À EMPORTER & EN LIVRAISON à Bussy Saint Georges",
+        "subtitle": "À EMPORTER & EN LIVRAISON à Saint-Malo, France",
         "order": "COMMANDER"
       },
       "concept": {
         "label": "concept",
         "title": "Cuisine indienne de qualité",
-        "description": "Chez Chapati à Bussy St Georges, découvrez une savoureuse cuisine indienne. L’instant d’un déjeuner ou d’un diner, l’expérience est tentante pour qui est à la recherche d’une expérience culinaire dépaysante. Nos recettes sont 100% fait maison."
+        "description": "Chez Chapati à Saint-Malo, France, découvrez une savoureuse cuisine indienne. L’instant d’un déjeuner ou d’un diner, l’expérience est tentante pour qui est à la recherche d’une expérience culinaire dépaysante. Nos recettes sont 100% fait maison."
       },
       "menu": {
         "label": "MENU",
@@ -69,9 +69,19 @@
         },
         "info": {
           "title": "INFOS UTILES",
-          "phone": "01 72 99 22 98",
-          "email": "contact@chapati.fr",
-          "address": "14 bis Rue Paul Delouvrier, 77600 Bussy-Saint-Georges"
+          "phone": "02 56 52 59 66",
+          "email": "contact@chapati35.com",
+          "address": "22 Rue Sainte-Barbe, 35400 Saint-Malo, France",
+          "hoursTitle": "HORAIRES D'OUVERTURE",
+          "hours": [
+            "Lundi : 11h30 – 14h30 & 18h30 – 23h00",
+            "Mardi : 11h30 – 14h30 & 18h30 – 23h00",
+            "Mercredi : 11h30 – 14h30 & 18h30 – 23h00",
+            "Jeudi : 11h30 – 14h30 & 18h30 – 00h00",
+            "Vendredi : 11h30 – 14h30 & 18h30 – 00h00",
+            "Samedi : 11h30 – 14h30 & 18h30 – 00h00",
+            "Dimanche : 11h30 – 14h30 & 18h30 – 23h00"
+          ]
         }
       },
       "footer": {
@@ -94,7 +104,7 @@
       },
       "hero": {
         "title": "INDIAN STREET FOOD RESTAURANT",
-        "subtitle": "TAKEAWAY & DELIVERY in Bussy Saint Georges",
+        "subtitle": "TAKEAWAY & DELIVERY in Saint-Malo, France",
         "order": "ORDER"
       },
       "concept": {
@@ -145,9 +155,19 @@
         },
         "info": {
           "title": "USEFUL INFO",
-          "phone": "01 72 99 22 98",
+          "phone": "02 56 52 59 66",
           "email": "contact@chapati.fr",
-          "address": "14 bis Rue Paul Delouvrier, 77600 Bussy-Saint-Georges"
+          "address": "22 Rue Sainte-Barbe, 35400 Saint-Malo, France",
+          "hoursTitle": "OPENING HOURS",
+          "hours": [
+            "Monday: 11:30 – 14:30 & 18:30 – 23:00",
+            "Tuesday: 11:30 – 14:30 & 18:30 – 23:00",
+            "Wednesday: 11:30 – 14:30 & 18:30 – 23:00",
+            "Thursday: 11:30 – 14:30 & 18:30 – 00:00",
+            "Friday: 11:30 – 14:30 & 18:30 – 00:00",
+            "Saturday: 11:30 – 14:30 & 18:30 – 00:00",
+            "Sunday: 11:30 – 14:30 & 18:30 – 23:00"
+          ]
         }
       },
       "footer": {
@@ -156,7 +176,7 @@
           "title": "PAYMENT METHODS",
           "methods": ["Cash", "Blue Card", "Resto Tickets"]
         },
-        "copyright": "Copyright © 2026 Chapati | Realized by DIGIWELL FOOD"
+        "copyright": "Copyright © 2026 Chapati35"
       }
     }
   }
