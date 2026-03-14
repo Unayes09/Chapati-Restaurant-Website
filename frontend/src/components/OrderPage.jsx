@@ -1,126 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
 
-const openingHours = {
-  0: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '22:45' }], // Sun
-  1: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '22:45' }], // Mon
-  2: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '22:45' }], // Tue
-  3: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '22:45' }], // Wed
-  4: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '23:45' }], // Thu
-  5: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '23:45' }], // Fri
-  6: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '23:45' }]  // Sat
-};
-
-
-const generateTimeSlots = (selectedDate, exclusions = []) => {
-  if (!selectedDate) return [];
-
-  // Get current time in France (Europe/Paris)
-  const getFranceTime = () => {
-    const now = new Date();
-    const franceStr = now.toLocaleString('en-US', { timeZone: 'Europe/Paris' });
-    return new Date(franceStr);
-  };
-
-  const franceNow = getFranceTime();
-  const dateObj = new Date(selectedDate);
-  if (isNaN(dateObj.getTime())) return [];
-
-  const dateStr = dateObj.toISOString().split('T')[0];
-  const dayOfWeek = dateObj.getDay();
-  const schedule = openingHours[dayOfWeek];
-  const slots = [];
-  
-  // Check if selectedDate is today in France
-  const isTodayInFrance = dateObj.toDateString() === franceNow.toDateString();
-
-  // Find exclusion for this date
-  const exclusion = exclusions.find(e => e.date === dateStr);
-  if (exclusion && exclusion.type === 'full_day') return [];
-
-  schedule.forEach(range => {
-    let current = new Date(dateObj);
-    const [startH, startM] = range.start.split(':').map(Number);
-    const [endH, endM] = range.end.split(':').map(Number);
-    
-    current.setHours(startH, startM, 0, 0);
-    
-    const end = new Date(dateObj);
-    if (endH === 0) {
-      end.setDate(end.getDate() + 1);
-      end.setHours(0, 0, 0, 0);
-    } else {
-      end.setHours(endH, endM, 0, 0);
-    }
-
-    while (current <= end) {
-      const timeStr = current.toTimeString().substring(0, 5);
-      
-      let isAvailable = true;
-
-      // Check if this specific slot is excluded
-      if (exclusion && exclusion.type === 'partial' && exclusion.slots.includes(timeStr)) {
-        isAvailable = false;
-      }
-
-      if (isTodayInFrance && isAvailable) {
-        // Must book at least 30 minutes in advance relative to France time
-        const minBookingTime = new Date(franceNow.getTime() + 30 * 60000);
-        if (current < minBookingTime) {
-          isAvailable = false;
-        }
-      }
-
-      if (isAvailable) {
-        slots.push(timeStr);
-      }
-      current.setMinutes(current.getMinutes() + 15);
-    }
-  });
-
-  return slots;
-};
+const pickupOptions = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '60 min' },
+];
 
 const OrderPage = () => {
   const { lang } = useLanguage();
   const isFr = lang === 'fr';
-
-  const [exclusions, setExclusions] = useState([]);
-
-  useEffect(() => {
-    const fetchExclusions = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/exclusions`);
-        if (res.ok) {
-          const data = await res.json();
-          setExclusions(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch exclusions', err);
-      }
-    };
-    fetchExclusions();
-  }, []);
-
-  const availableDays = useMemo(() => {
-    // We need to calculate availability based on France time
-    const getFranceNow = () => {
-      const now = new Date();
-      return new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Paris' }));
-    };
-
-    const franceNow = getFranceNow();
-    const days = [];
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(franceNow);
-      date.setDate(franceNow.getDate() + i);
-      days.push(date);
-    }
-
-    // Return only days that have at least one slot available
-    return days.filter(d => generateTimeSlots(d.toISOString().split('T')[0], exclusions).length > 0);
-  }, [exclusions]);
 
   const [items, setItems] = useState(() => {
     const stored = localStorage.getItem('chapatiOrder');
@@ -143,20 +33,9 @@ const OrderPage = () => {
     name: '',
     email: '',
     phone: '',
-    tableSize: '2',
     additionalInfo: '',
-    date: '',
-    time: ''
+    pickupRequestedInMinutes: '30',
   });
-
-  // Set default date once availableDays is loaded
-  useEffect(() => {
-    if (availableDays.length > 0 && !formData.date) {
-      setFormData(prev => ({ ...prev, date: availableDays[0].toISOString().split('T')[0] }));
-    }
-  }, [availableDays]);
-
-  const timeSlots = useMemo(() => generateTimeSlots(formData.date, exclusions), [formData.date, exclusions]);
 
   const total = useMemo(
     () =>
@@ -192,7 +71,7 @@ const OrderPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const isFormValid = formData.name && formData.email && formData.phone && formData.time;
+  const isFormValid = formData.name && formData.email && formData.phone && formData.pickupRequestedInMinutes;
 
   const submitBooking = async () => {
     if (!isFormValid || isLoading) return;
@@ -205,11 +84,7 @@ const OrderPage = () => {
         email: formData.email,
         phone: formData.phone,
       },
-      table: {
-        size: formData.tableSize,
-      },
-      bookingDate: formData.date,
-      bookingTime: formData.time,
+      pickupRequestedInMinutes: Number(formData.pickupRequestedInMinutes),
       additionalInfo: formData.additionalInfo,
       items: items.map(item => ({
         id: item.id,
@@ -245,10 +120,8 @@ const OrderPage = () => {
         name: '',
         email: '',
         phone: '',
-        tableSize: '2',
         additionalInfo: '',
-        date: availableDays[0]?.toISOString().split('T')[0] || '',
-        time: ''
+        pickupRequestedInMinutes: '30',
       });
     } catch (error) {
       console.error('Booking Error:', error);
@@ -389,55 +262,19 @@ const OrderPage = () => {
             </div>
 
             <div className="booking-form-group">
-              <label>{isFr ? 'Taille de la table *' : 'Table Size *'}</label>
-              <select name="tableSize" className="booking-select" value={formData.tableSize} onChange={handleInputChange}>
-                <option value="2">2 {isFr ? 'personnes' : 'persons'}</option>
-                <option value="4">4 {isFr ? 'personnes' : 'persons'}</option>
-                <option value="6">6 {isFr ? 'personnes' : 'persons'}</option>
-                <option value="8">8 {isFr ? 'personnes' : 'persons'}</option>
-              </select>
-            </div>
-
-            <div className="booking-form-group">
-              <label>{isFr ? 'Date de réservation *' : 'Booking Date *'}</label>
-              <div className="booking-date-selector">
-                {availableDays.map((date, idx) => {
-                  const dStr = date.toISOString().split('T')[0];
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`booking-date-btn ${formData.date === dStr ? 'selected' : ''}`}
-                      onClick={() => setFormData(prev => ({ ...prev, date: dStr, time: '' }))}
-                    >
-                      <span className="day">{date.toLocaleDateString(isFr ? 'fr-FR' : 'en-US', { weekday: 'short' })}</span>
-                      <span className="date">{date.getDate()}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="booking-form-group">
-              <label>{isFr ? 'Heure disponible *' : 'Available Time *'}</label>
-              <select 
-                name="time" 
-                required 
-                className="booking-select" 
-                value={formData.time} 
+              <label>{isFr ? 'Temps souhaité *' : 'Requested Pickup Time *'}</label>
+              <select
+                name="pickupRequestedInMinutes"
+                className="booking-select"
+                value={formData.pickupRequestedInMinutes}
                 onChange={handleInputChange}
               >
-                <option value="">{isFr ? 'Choisir une heure' : 'Select a time'}</option>
-                {timeSlots.map((slot, idx) => (
-                  <option key={idx} value={slot}>
-                    {slot}
+                {pickupOptions.map((opt) => (
+                  <option key={opt.value} value={String(opt.value)}>
+                    {opt.label}
                   </option>
                 ))}
               </select>
-              {timeSlots.length === 0 && (
-                <p style={{ fontSize: '12px', color: 'red', marginTop: '10px' }}>
-                  {isFr ? 'Aucun créneau disponible pour cette date.' : 'No slots available for this date.'}
-                </p>
-              )}
             </div>
 
             <div className="booking-form-group">
@@ -471,8 +308,8 @@ const OrderPage = () => {
           <h3>{isFr ? 'Commande Reçue !' : 'Order Received!'}</h3>
           <p>
             {isFr 
-              ? 'Merci ! Votre demande de réservation a été envoyée. Vous recevrez un e-mail de confirmation très bientôt.' 
-              : 'Thank you! Your booking request has been sent. You will receive a confirmation email very soon.'}
+              ? 'Merci ! Votre commande a été envoyée. Vous recevrez un e-mail quand le restaurant confirme le temps de retrait.' 
+              : 'Thank you! Your order has been sent. You will receive an email once the restaurant confirms your pickup time.'}
           </p>
           <button className="btn-modal-close" onClick={() => setShowSuccessModal(false)}>
             {isFr ? 'Fermer' : 'Close'}

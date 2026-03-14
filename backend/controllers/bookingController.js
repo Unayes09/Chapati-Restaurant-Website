@@ -1,12 +1,26 @@
 const Booking = require('../models/Booking');
 const sendEmail = require('../utils/email');
 
-// Customer: Create a new booking/order
+const formatParisTime = (date) =>
+  new Date(date).toLocaleTimeString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+const formatParisDate = (date) =>
+  new Date(date).toLocaleDateString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+// Customer: Create a new booking (legacy) OR pickup order (new)
 const createBooking = async (req, res) => {
   try {
-    const { customer, table, bookingDate, bookingTime, additionalInfo, items, totalAmount } = req.body;
-    
-    const booking = new Booking({
+    const {
       customer,
       table,
       bookingDate,
@@ -14,23 +28,90 @@ const createBooking = async (req, res) => {
       additionalInfo,
       items,
       totalAmount,
-    });
+      pickupRequestedInMinutes,
+    } = req.body;
+
+    const isPickupOrder = Number.isFinite(Number(pickupRequestedInMinutes));
+
+    const booking = new Booking(
+      isPickupOrder
+        ? {
+            orderType: 'pickup',
+            customer,
+            additionalInfo,
+            items,
+            totalAmount,
+            pickupRequestedInMinutes: Number(pickupRequestedInMinutes),
+          }
+        : {
+            orderType: 'booking',
+            customer,
+            table,
+            bookingDate,
+            bookingTime,
+            additionalInfo,
+            items,
+            totalAmount,
+          },
+    );
 
     await booking.save();
 
-    // Send confirmation email to customer
-    const emailSubject = 'Your Chapati 35 Booking Request';
-    const emailText = `Hello ${customer.name}, your booking for ${bookingDate} at ${bookingTime} has been received. We will confirm it soon.`;
-    const emailHtml = `
-      <h3>Hello ${customer.name},</h3>
-      <p>Your booking for <strong>${bookingDate}</strong> at <strong>${bookingTime}</strong> has been received.</p>
-      <p>Order Summary:</p>
-      <ul>
-        ${items.map(item => `<li>${item.qty}x ${item.label} ${item.price ? `(€${item.price.toFixed(2)})` : ''}</li>`).join('')}
-      </ul>
-      <p>Total Amount: €${totalAmount.toFixed(2)}</p>
-      <p>We will notify you once your booking is confirmed or rejected.</p>
-    `;
+    const io = req.app.get('io');
+    if (io && booking.orderType === 'pickup') {
+      io.emit('new_order', {
+        id: booking._id,
+        orderCode: booking.orderCode,
+        createdAt: booking.createdAt,
+      });
+    }
+
+    const safeItems = Array.isArray(items) ? items : [];
+
+    const emailSubject = isPickupOrder
+      ? 'Chapati 35: Order Request Received'
+      : 'Your Chapati 35 Booking Request';
+
+    const emailText = isPickupOrder
+      ? `Hello ${customer.name}, your order request has been received. Requested pickup: ${pickupRequestedInMinutes} minutes. We will confirm soon.`
+      : `Hello ${customer.name}, your booking for ${bookingDate} at ${bookingTime} has been received. We will confirm it soon.`;
+
+    const emailHtml = isPickupOrder
+      ? `
+        <h3>Hello ${customer.name},</h3>
+        <p>Your order request has been received.</p>
+        <p><strong>Requested pickup:</strong> ${pickupRequestedInMinutes} minutes</p>
+        <p>Order Summary:</p>
+        <ul>
+          ${safeItems
+            .map(
+              (item) =>
+                `<li>${item.qty}x ${item.label} ${
+                  item.price ? `(€${Number(item.price).toFixed(2)})` : ''
+                }</li>`,
+            )
+            .join('')}
+        </ul>
+        <p>Total Amount: €${Number(totalAmount || 0).toFixed(2)}</p>
+        <p>We will email you once your order is received and your pickup time is confirmed.</p>
+      `
+      : `
+        <h3>Hello ${customer.name},</h3>
+        <p>Your booking for <strong>${bookingDate}</strong> at <strong>${bookingTime}</strong> has been received.</p>
+        <p>Order Summary:</p>
+        <ul>
+          ${safeItems
+            .map(
+              (item) =>
+                `<li>${item.qty}x ${item.label} ${
+                  item.price ? `(€${Number(item.price).toFixed(2)})` : ''
+                }</li>`,
+            )
+            .join('')}
+        </ul>
+        <p>Total Amount: €${Number(totalAmount || 0).toFixed(2)}</p>
+        <p>We will notify you once your booking is confirmed or rejected.</p>
+      `;
 
     await sendEmail(customer.email, emailSubject, emailText, emailHtml);
 
@@ -43,12 +124,21 @@ const createBooking = async (req, res) => {
 // Admin: Get all bookings with filtering/search
 const getBookings = async (req, res) => {
   try {
-    const { date, time, tableSize, search } = req.query;
+    const { date, time, tableSize, search, status, code, orderType, createdDate } = req.query;
     let query = {};
 
     if (date) query.bookingDate = date;
     if (time) query.bookingTime = time;
     if (tableSize) query['table.size'] = tableSize;
+    if (status) query.status = status;
+    if (orderType) query.orderType = orderType;
+    if (code) query.orderCode = code;
+
+    if (createdDate) {
+      const start = new Date(`${createdDate}T00:00:00.000Z`);
+      const end = new Date(`${createdDate}T23:59:59.999Z`);
+      query.createdAt = { $gte: start, $lte: end };
+    }
     
     // Global search for customer name/email/phone
     if (search) {
@@ -56,6 +146,7 @@ const getBookings = async (req, res) => {
         { 'customer.name': { $regex: search, $options: 'i' } },
         { 'customer.email': { $regex: search, $options: 'i' } },
         { 'customer.phone': { $regex: search, $options: 'i' } },
+        { orderCode: { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -63,6 +154,60 @@ const getBookings = async (req, res) => {
     res.send(bookings);
   } catch (error) {
     res.status(500).send({ error: error.message });
+  }
+};
+
+// Admin: Mark pickup order as received (confirm pickup time)
+const receiveOrder = async (req, res) => {
+  try {
+    const { confirmedMinutes } = req.body;
+    const minutes = Number(confirmedMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return res.status(400).send({ error: 'confirmedMinutes must be a positive number' });
+    }
+
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).send({ error: 'Order not found' });
+
+    booking.status = 'received';
+    booking.pickupConfirmedInMinutes = minutes;
+    booking.pickupConfirmedAt = new Date();
+    booking.pickupReadyAt = new Date(Date.now() + minutes * 60 * 1000);
+    await booking.save();
+
+    const readyDateParis = formatParisDate(booking.pickupReadyAt);
+    const readyTimeParis = formatParisTime(booking.pickupReadyAt);
+
+    const emailSubject = `Chapati 35: Order Received (${booking.orderCode})`;
+    const emailText = `Hello ${booking.customer.name}, your order is received. Your pickup code is ${booking.orderCode}. You can collect after ${readyTimeParis} (Paris time).`;
+    const emailHtml = `
+      <h3>Hello ${booking.customer.name},</h3>
+      <p>Your order has been <strong>RECEIVED</strong>.</p>
+      <p><strong>Pickup code:</strong> ${booking.orderCode}</p>
+      <p><strong>Ready after:</strong> ${readyDateParis} ${readyTimeParis} (Paris time)</p>
+      <p>Please show your pickup code at the counter.</p>
+    `;
+
+    await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+
+    res.send(booking);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+};
+
+// Admin: Mark pickup order as collected by customer
+const markCollected = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) return res.status(404).send({ error: 'Order not found' });
+
+    booking.status = 'collected';
+    await booking.save();
+
+    res.send(booking);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
   }
 };
 
@@ -90,7 +235,7 @@ const confirmBooking = async (req, res) => {
 
     res.send(booking);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send({ error: error.message });
   }
 };
 
@@ -106,20 +251,29 @@ const rejectBooking = async (req, res) => {
     await booking.save();
 
     // Send rejection email
-    const emailSubject = 'Chapati 35: Booking Status';
-    const emailText = `Hello ${booking.customer.name}, we are sorry to inform you that we cannot fulfill your booking for ${booking.bookingDate} at ${booking.bookingTime} at this time.`;
-    const emailHtml = `
-      <h3>Hello ${booking.customer.name},</h3>
-      <p>We are sorry to inform you that we cannot fulfill your booking for <strong>${booking.bookingDate}</strong> at <strong>${booking.bookingTime}</strong> at this time.</p>
-      <p>Please feel free to book for another time or contact us directly.</p>
-    `;
+    const isPickupOrder = booking.orderType === 'pickup';
+    const emailSubject = isPickupOrder ? 'Chapati 35: Order Status' : 'Chapati 35: Booking Status';
+    const emailText = isPickupOrder
+      ? `Hello ${booking.customer.name}, we are sorry to inform you that we cannot fulfill your order at this time.`
+      : `Hello ${booking.customer.name}, we are sorry to inform you that we cannot fulfill your booking for ${booking.bookingDate} at ${booking.bookingTime} at this time.`;
+    const emailHtml = isPickupOrder
+      ? `
+        <h3>Hello ${booking.customer.name},</h3>
+        <p>We are sorry to inform you that we cannot fulfill your order at this time.</p>
+        <p>Please feel free to place a new order later or contact us directly.</p>
+      `
+      : `
+        <h3>Hello ${booking.customer.name},</h3>
+        <p>We are sorry to inform you that we cannot fulfill your booking for <strong>${booking.bookingDate}</strong> at <strong>${booking.bookingTime}</strong> at this time.</p>
+        <p>Please feel free to book for another time or contact us directly.</p>
+      `;
 
     await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
 
     res.send(booking);
   } catch (error) {
-    res.status(400).send(error);
+    res.status(400).send({ error: error.message });
   }
 };
 
-module.exports = { createBooking, getBookings, confirmBooking, rejectBooking };
+module.exports = { createBooking, getBookings, receiveOrder, markCollected, confirmBooking, rejectBooking };

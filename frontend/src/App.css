@@ -615,6 +615,119 @@ section {
   color: #e65100;
 }
 
+.full-menu-bundle-controls {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.full-menu-bundle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.full-menu-bundle-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: #333;
+  white-space: nowrap;
+}
+
+.full-menu-bundle-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #333;
+}
+
+.full-menu-bundle-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #333;
+}
+
+.full-menu-bundle-checkbox input {
+  accent-color: var(--color-primary);
+}
+
+.full-menu-bundle-actions {
+  display: flex;
+}
+
+.full-menu-bundle-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.full-menu-bundle-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.full-menu-bundle-btn.is-selected {
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.full-menu-bundle-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.full-menu-bundle-split-card {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.full-menu-bundle-split-title {
+  font-weight: 900;
+  font-size: 14px;
+  color: #333;
+}
+
+.full-menu-bundle-radio-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.full-menu-bundle-radio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #444;
+  cursor: pointer;
+}
+
+.full-menu-bundle-radio input {
+  accent-color: var(--color-primary);
+}
+
 .full-menu-toolbar {
   display: flex;
   justify-content: space-between;
@@ -1285,6 +1398,16 @@ section {
   .full-menu-grid {
     grid-template-columns: 1fr;
     gap: 0;
+  }
+  .full-menu-bundle-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .full-menu-bundle-label {
+    white-space: normal;
+  }
+  .full-menu-bundle-split {
+    grid-template-columns: 1fr;
   }
   .full-menu-column {
     display: contents; /* Flattens the hierarchy so sections are siblings in the grid */

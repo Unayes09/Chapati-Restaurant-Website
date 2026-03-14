@@ -1,16 +1,25 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { Server } = require('socket.io');
 const authRoutes = require('./routes/authRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const exclusionRoutes = require('./routes/exclusionRoutes');
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 app.use(express.json());
 app.use(cors());
+
+const io = new Server(server, {
+  cors: { origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE'] },
+});
+
+app.set('io', io);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -24,7 +33,7 @@ const MONGO_URI = process.env.MONGO_URI;
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log('Connected to MongoDB');
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
   })

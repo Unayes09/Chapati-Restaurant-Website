@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { io } from 'socket.io-client';
 import Navbar from './components/Navbar';
 import BookingCard from './components/BookingCard';
 import LoginForm from './components/LoginForm';
@@ -14,27 +15,29 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [exclusions, setExclusions] = useState([]);
   const [filters, setFilters] = useState({
+    orderType: 'pickup',
+    status: '',
+    code: '',
+    createdDate: '',
     date: '',
     time: '',
     tableSize: '',
-    search: ''
+    search: '',
   });
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [receiveTarget, setReceiveTarget] = useState(null);
+  const [receiveMinutes, setReceiveMinutes] = useState('30');
   const [showExclusionModal, setShowExclusionModal] = useState(false);
   const [newExclusion, setNewExclusion] = useState({
     date: '',
     type: 'full_day',
     slots: []
   });
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioCtxRef = useRef(null);
+  const soundEnabledRef = useRef(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (token) {
-      setIsLoggedIn(true);
-      fetchBookings();
-      fetchExclusions();
-    }
-  }, [token, filters]);
 
   const handleLoginChange = (e) => {
     setLoginData({ ...loginData, [e.target.name]: e.target.value });
@@ -59,32 +62,39 @@ function App() {
     setToken('');
     setIsLoggedIn(false);
     setBookings([]);
+    setSoundEnabled(false);
+    audioCtxRef.current = null;
+    soundEnabledRef.current = false;
   };
 
   const handleFilterChange = (e) => {
     setFilters({ ...filters, [e.target.name]: e.target.value });
   };
 
-  const fetchExclusions = async () => {
+  const fetchExclusions = useCallback(async () => {
     try {
       const res = await axios.get(`${API_URL}/api/exclusions`);
       setExclusions(res.data);
     } catch (err) {
       console.error('Fetch exclusions failed', err);
     }
-  };
+  }, []);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (filters.orderType) params.append('orderType', filters.orderType);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.code) params.append('code', filters.code);
+      if (filters.createdDate) params.append('createdDate', filters.createdDate);
       if (filters.date) params.append('date', filters.date);
       if (filters.time) params.append('time', filters.time);
       if (filters.tableSize) params.append('tableSize', filters.tableSize);
       if (filters.search) params.append('search', filters.search);
 
       const res = await axios.get(`${API_URL}/api/bookings?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       setBookings(res.data);
     } catch (err) {
@@ -93,13 +103,86 @@ function App() {
     } finally {
       setLoading(false);
     }
+  }, [filters, token]);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  const ensureAudioContext = useCallback(async () => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext();
+    }
+
+    if (audioCtxRef.current.state === 'suspended') {
+      try {
+        await audioCtxRef.current.resume();
+      } catch {
+        return audioCtxRef.current;
+      }
+    }
+
+    return audioCtxRef.current;
+  }, []);
+
+  const playBeep = useCallback(async ({ seconds = 1.0 } = {}) => {
+    if (!soundEnabledRef.current) return;
+    const ctx = await ensureAudioContext();
+    if (!ctx) return;
+
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = 880;
+      gain.gain.value = 0.12;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.start(now);
+      osc.stop(now + seconds);
+    } catch {
+      return;
+    }
+  }, [ensureAudioContext]);
+
+  const handleEnableSound = async () => {
+    setSoundEnabled(true);
+    soundEnabledRef.current = true;
+    await ensureAudioContext();
+    await playBeep({ seconds: 0.25 });
   };
+
+  useEffect(() => {
+    if (token) {
+      setIsLoggedIn(true);
+      fetchBookings();
+      fetchExclusions();
+    }
+  }, [token, fetchBookings, fetchExclusions]);
+
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(API_URL, { transports: ['websocket'] });
+
+    socket.on('new_order', () => {
+      playBeep({ seconds: 1.0 });
+      fetchBookings();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [token, fetchBookings, playBeep]);
 
   const handleSetExclusion = async (e) => {
     e.preventDefault();
     try {
       await axios.post(`${API_URL}/api/exclusions`, newExclusion, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       fetchExclusions();
       setShowExclusionModal(false);
@@ -113,10 +196,10 @@ function App() {
     if (!window.confirm('Remove this exclusion?')) return;
     try {
       await axios.delete(`${API_URL}/api/exclusions/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       fetchExclusions();
-    } catch (err) {
+    } catch {
       alert('Failed to delete exclusion');
     }
   };
@@ -138,11 +221,43 @@ function App() {
     }
   }
 
-  const updateBookingStatus = async (id, status) => {
+  const rejectOrder = async (id) => {
     try {
-      const endpoint = status === 'confirmed' ? 'confirm' : 'reject';
-      await axios.patch(`${API_URL}/api/bookings/${id}/${endpoint}`, {}, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` }
+      await axios.patch(`${API_URL}/api/bookings/${id}/reject`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchBookings();
+    } catch (err) {
+      alert('Update failed: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const openReceiveModal = (booking) => {
+    setReceiveTarget(booking);
+    setReceiveMinutes(String(booking.pickupRequestedInMinutes || 30));
+    setShowReceiveModal(true);
+  };
+
+  const confirmReceive = async () => {
+    if (!receiveTarget?._id) return;
+    try {
+      await axios.patch(`${API_URL}/api/bookings/${receiveTarget._id}/receive`, {
+        confirmedMinutes: Number(receiveMinutes),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowReceiveModal(false);
+      setReceiveTarget(null);
+      fetchBookings();
+    } catch (err) {
+      alert('Receive failed: ' + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const markCollected = async (id) => {
+    try {
+      await axios.patch(`${API_URL}/api/bookings/${id}/collected`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       fetchBookings();
     } catch (err) {
@@ -171,12 +286,50 @@ function App() {
         <section className="admin-controls">
           <div className="search-filters-bar">
             <div className="filter-item">
-              <label>Search Customer</label>
+              <label>Search</label>
               <input 
                 type="text" 
                 name="search" 
-                placeholder="Name, email or phone..." 
+                placeholder="Name, email, phone or code..." 
                 value={filters.search}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="filter-item">
+              <label>Type</label>
+              <select name="orderType" value={filters.orderType} onChange={handleFilterChange}>
+                <option value="pickup">Pickup Orders</option>
+                <option value="booking">Table Bookings</option>
+                <option value="">All</option>
+              </select>
+            </div>
+            <div className="filter-item">
+              <label>Status</label>
+              <select name="status" value={filters.status} onChange={handleFilterChange}>
+                <option value="">All</option>
+                <option value="pending">pending</option>
+                <option value="received">received</option>
+                <option value="collected">collected</option>
+                <option value="rejected">rejected</option>
+                <option value="confirmed">confirmed</option>
+              </select>
+            </div>
+            <div className="filter-item">
+              <label>Order Code</label>
+              <input
+                type="text"
+                name="code"
+                placeholder="e.g. CH-1234"
+                value={filters.code}
+                onChange={handleFilterChange}
+              />
+            </div>
+            <div className="filter-item">
+              <label>Created Date</label>
+              <input
+                type="date"
+                name="createdDate"
+                value={filters.createdDate}
                 onChange={handleFilterChange}
               />
             </div>
@@ -206,7 +359,7 @@ function App() {
                 <option value="8">8 Persons</option>
               </select>
             </div>
-            <button className="btn-reset-filters" onClick={() => setFilters({ date: '', time: '', tableSize: '', search: '' })}>
+            <button className="btn-reset-filters" onClick={() => setFilters({ orderType: 'pickup', status: '', code: '', createdDate: '', date: '', time: '', tableSize: '', search: '' })}>
               Reset
             </button>
           </div>
@@ -234,8 +387,18 @@ function App() {
         </section>
 
         <header className="dashboard-header-flex">
-          <h2>Recent Bookings ({bookings.length})</h2>
+          <h2>{filters.orderType === 'pickup' ? 'Recent Orders' : 'Recent Bookings'} ({bookings.length})</h2>
           {loading && <span className="loading-indicator">Updating...</span>}
+          {!soundEnabled && (
+            <button
+              type="button"
+              className="btn-enable-sound"
+              onClick={handleEnableSound}
+              data-tooltip="Enable this once to allow sound notifications when new order comes."
+            >
+              Enable Sound
+            </button>
+          )}
         </header>
 
         {bookings.length === 0 && !loading ? (
@@ -243,17 +406,55 @@ function App() {
             <p>No bookings found with current filters.</p>
           </div>
         ) : (
-          <div className="bookings-grid-masonry">
+          <div className="bookings-list">
             {bookings.map((booking) => (
               <BookingCard 
                 key={booking._id} 
                 booking={booking} 
-                onUpdateStatus={updateBookingStatus} 
+                onReceive={openReceiveModal}
+                onReject={rejectOrder}
+                onCollected={markCollected}
               />
             ))}
           </div>
         )}
       </main>
+
+      {showReceiveModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal">
+            <header>
+              <h3>Receive Order</h3>
+              <button onClick={() => setShowReceiveModal(false)}>&times;</button>
+            </header>
+            <div className="modal-form-group">
+              <label>Order</label>
+              <div style={{ fontWeight: 800 }}>
+                {receiveTarget?.orderCode || receiveTarget?._id}
+              </div>
+            </div>
+            <div className="modal-form-group">
+              <label>Requested</label>
+              <div style={{ fontWeight: 700, color: '#636e72' }}>
+                {receiveTarget?.pickupRequestedInMinutes ? `${receiveTarget.pickupRequestedInMinutes} min` : '-'}
+              </div>
+            </div>
+            <div className="modal-form-group">
+              <label>Confirm pickup in</label>
+              <select value={receiveMinutes} onChange={(e) => setReceiveMinutes(e.target.value)}>
+                <option value="15">15 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setShowReceiveModal(false)} className="btn-cancel">Cancel</button>
+              <button type="button" onClick={confirmReceive} className="btn-save">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Exclusion Modal */}
       {showExclusionModal && (
