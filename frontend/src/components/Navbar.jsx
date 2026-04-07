@@ -31,6 +31,14 @@ const Navbar = () => {
     closeMenu();
   };
 
+  const handleReservationClick = (e) => {
+    e.preventDefault();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 'reservation');
+    window.location.href = url.toString();
+    closeMenu();
+  };
+
   const handleSectionClick = (e, sectionId) => {
     e.preventDefault();
     const url = new URL(window.location.origin + window.location.pathname);
@@ -50,14 +58,8 @@ const Navbar = () => {
           <ul className="nav-links">
             <li><a href="/" className="active" onClick={handleHomeClick}>{t.navbar.home}</a></li>
             <li><a href="#menu" onClick={handleMenuClick}>{t.navbar.menu}</a></li>
-            <li><a href="#foodtruck" onClick={(e) => handleSectionClick(e, 'foodtruck')}>{t.navbar.foodTruck}</a></li>
+            <li><a href="#reservation" onClick={handleReservationClick}>{t.navbar.reservation}</a></li>
             <li><a href="#contact" onClick={(e) => handleSectionClick(e, 'contact')}>{t.navbar.contact}</a></li>
-            <li>
-              <a href="#delivery" className="has-dropdown" onClick={(e) => handleSectionClick(e, 'delivery')}>
-                {t.navbar.delivery}
-                <span className="dropdown-arrow">⌄</span>
-              </a>
-            </li>
           </ul>
 
           <div className="nav-actions">
@@ -74,7 +76,7 @@ const Navbar = () => {
                 </span>
               )}
             </button>
-            <button className="btn-order-pill" onClick={closeMenu}>{t.navbar.order}</button>
+            <button className="btn-order-pill" onClick={handleMenuClick}>{t.navbar.order}</button>
           </div>
         </div>
 

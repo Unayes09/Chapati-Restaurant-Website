@@ -4,6 +4,9 @@ import { io } from 'socket.io-client';
 import Navbar from './components/Navbar';
 import BookingCard from './components/BookingCard';
 import LoginForm from './components/LoginForm';
+import ReservationsPanel from './components/ReservationsPanel';
+import MessagesPanel from './components/MessagesPanel';
+import AnalyticsPanel from './components/AnalyticsPanel';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -11,9 +14,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '');
+  const [activeTab, setActiveTab] = useState('orders');
+  const [refreshTick, setRefreshTick] = useState(0);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [exclusions, setExclusions] = useState([]);
   const [filters, setFilters] = useState({
     orderType: 'pickup',
     status: '',
@@ -24,15 +28,11 @@ function App() {
     tableSize: '',
     search: '',
   });
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState(null);
   const [receiveMinutes, setReceiveMinutes] = useState('30');
-  const [showExclusionModal, setShowExclusionModal] = useState(false);
-  const [newExclusion, setNewExclusion] = useState({
-    date: '',
-    type: 'full_day',
-    slots: []
-  });
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioCtxRef = useRef(null);
   const soundEnabledRef = useRef(false);
@@ -67,18 +67,17 @@ function App() {
     soundEnabledRef.current = false;
   };
 
-  const handleFilterChange = (e) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+  const handleRefresh = () => {
+    setRefreshTick((t) => t + 1);
+    if (activeTab === 'orders') {
+      fetchBookings();
+    }
   };
 
-  const fetchExclusions = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API_URL}/api/exclusions`);
-      setExclusions(res.data);
-    } catch (err) {
-      console.error('Fetch exclusions failed', err);
-    }
-  }, []);
+  const handleFilterChange = (e) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setPage(1);
+  };
 
   const fetchBookings = useCallback(async () => {
     setLoading(true);
@@ -92,18 +91,26 @@ function App() {
       if (filters.time) params.append('time', filters.time);
       if (filters.tableSize) params.append('tableSize', filters.tableSize);
       if (filters.search) params.append('search', filters.search);
+      params.append('page', String(page));
+      params.append('limit', String(pagination.limit || 10));
 
       const res = await axios.get(`${API_URL}/api/bookings?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setBookings(res.data);
+      if (Array.isArray(res.data)) {
+        setBookings(res.data);
+        setPagination((prev) => ({ ...prev, page: 1, totalPages: 1 }));
+      } else {
+        setBookings(res.data.data || []);
+        if (res.data.pagination) setPagination(res.data.pagination);
+      }
     } catch (err) {
       console.error('Fetch bookings failed', err);
       if (err.response?.status === 401) handleLogout();
     } finally {
       setLoading(false);
     }
-  }, [filters, token]);
+  }, [filters, page, pagination.limit, token]);
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
@@ -160,9 +167,8 @@ function App() {
     if (token) {
       setIsLoggedIn(true);
       fetchBookings();
-      fetchExclusions();
     }
-  }, [token, fetchBookings, fetchExclusions]);
+  }, [token, fetchBookings]);
 
   useEffect(() => {
     if (!token) return;
@@ -177,41 +183,6 @@ function App() {
       socket.disconnect();
     };
   }, [token, fetchBookings, playBeep]);
-
-  const handleSetExclusion = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(`${API_URL}/api/exclusions`, newExclusion, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchExclusions();
-      setShowExclusionModal(false);
-      setNewExclusion({ date: '', type: 'full_day', slots: [] });
-    } catch (err) {
-      alert('Failed to set exclusion: ' + (err.response?.data?.error || err.message));
-    }
-  };
-
-  const handleDeleteExclusion = async (id) => {
-    if (!window.confirm('Remove this exclusion?')) return;
-    try {
-      await axios.delete(`${API_URL}/api/exclusions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchExclusions();
-    } catch {
-      alert('Failed to delete exclusion');
-    }
-  };
-
-  const handleSlotToggle = (slot) => {
-    const currentSlots = [...newExclusion.slots];
-    if (currentSlots.includes(slot)) {
-      setNewExclusion({ ...newExclusion, slots: currentSlots.filter(s => s !== slot) });
-    } else {
-      setNewExclusion({ ...newExclusion, slots: [...currentSlots, slot] });
-    }
-  };
 
   const timeSlotOptions = [];
   for (let h = 11; h <= 23; h++) {
@@ -280,9 +251,52 @@ function App() {
 
   return (
     <div className="admin-app">
-      <Navbar onLogout={handleLogout} onRefresh={fetchBookings} />
+      <Navbar onLogout={handleLogout} onRefresh={handleRefresh} />
       
       <main className="dashboard-main">
+        <div className="admin-top-tabs">
+          <button
+            type="button"
+            className={`admin-top-tab ${activeTab === 'orders' ? 'is-active' : ''}`}
+            onClick={() => {
+              setActiveTab('orders');
+              setFilters((prev) => ({ ...prev, orderType: 'pickup' }));
+              setPage(1);
+            }}
+          >
+            Orders
+          </button>
+          <button
+            type="button"
+            className={`admin-top-tab ${activeTab === 'reservations' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('reservations')}
+          >
+            Reservations
+          </button>
+          <button
+            type="button"
+            className={`admin-top-tab ${activeTab === 'messages' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('messages')}
+          >
+            Messages
+          </button>
+          <button
+            type="button"
+            className={`admin-top-tab ${activeTab === 'analytics' ? 'is-active' : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            Analytics
+          </button>
+        </div>
+
+        {activeTab === 'reservations' ? (
+          <ReservationsPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
+        ) : activeTab === 'messages' ? (
+          <MessagesPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
+        ) : activeTab === 'analytics' ? (
+          <AnalyticsPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
+        ) : (
+        <>
         <section className="admin-controls">
           <div className="search-filters-bar">
             <div className="filter-item">
@@ -359,35 +373,20 @@ function App() {
                 <option value="8">8 Persons</option>
               </select>
             </div>
-            <button className="btn-reset-filters" onClick={() => setFilters({ orderType: 'pickup', status: '', code: '', createdDate: '', date: '', time: '', tableSize: '', search: '' })}>
+            <button
+              className="btn-reset-filters"
+              onClick={() => {
+                setFilters({ orderType: 'pickup', status: '', code: '', createdDate: '', date: '', time: '', tableSize: '', search: '' });
+                setPage(1);
+              }}
+            >
               Reset
             </button>
           </div>
-
-          <div className="exclusion-management-bar">
-            <h3>Reservation Controls</h3>
-            <button className="btn-add-exclusion" onClick={() => setShowExclusionModal(true)}>
-              + Off Day/Time
-            </button>
-          </div>
-
-          {exclusions.length > 0 && (
-            <div className="active-exclusions">
-              <h4>Active Restrictions</h4>
-              <div className="exclusions-list">
-                {exclusions.map(ex => (
-                  <div key={ex._id} className="exclusion-tag">
-                    <span>{ex.date} ({ex.type === 'full_day' ? 'Full Day Off' : `${ex.slots.length} Slots Off`})</span>
-                    <button onClick={() => handleDeleteExclusion(ex._id)}>&times;</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </section>
 
         <header className="dashboard-header-flex">
-          <h2>{filters.orderType === 'pickup' ? 'Recent Orders' : 'Recent Bookings'} ({bookings.length})</h2>
+          <h2>Recent Orders ({pagination.total})</h2>
           {loading && <span className="loading-indicator">Updating...</span>}
           {!soundEnabled && (
             <button
@@ -417,6 +416,29 @@ function App() {
               />
             ))}
           </div>
+        )}
+        <div className="pagination-bar">
+          <button
+            type="button"
+            className="btn-page"
+            disabled={page <= 1 || loading}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
+          <div className="page-info">
+            Page {pagination.page} / {pagination.totalPages}
+          </div>
+          <button
+            type="button"
+            className="btn-page"
+            disabled={page >= pagination.totalPages || loading}
+            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+          >
+            Next
+          </button>
+        </div>
+        </>
         )}
       </main>
 
@@ -452,75 +474,6 @@ function App() {
               <button type="button" onClick={() => setShowReceiveModal(false)} className="btn-cancel">Cancel</button>
               <button type="button" onClick={confirmReceive} className="btn-save">Confirm</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Exclusion Modal */}
-      {showExclusionModal && (
-        <div className="admin-modal-overlay">
-          <div className="admin-modal">
-            <header>
-              <h3>Add Restriction</h3>
-              <button onClick={() => setShowExclusionModal(false)}>&times;</button>
-            </header>
-            <form onSubmit={handleSetExclusion}>
-              <div className="modal-form-group">
-                <label>Select Date</label>
-                <input 
-                  type="date" 
-                  required 
-                  value={newExclusion.date} 
-                  onChange={(e) => setNewExclusion({ ...newExclusion, date: e.target.value })}
-                />
-              </div>
-              <div className="modal-form-group">
-                <label>Restriction Type</label>
-                <div className="radio-group">
-                  <label>
-                    <input 
-                      type="radio" 
-                      name="type" 
-                      value="full_day" 
-                      checked={newExclusion.type === 'full_day'} 
-                      onChange={() => setNewExclusion({ ...newExclusion, type: 'full_day' })}
-                    /> Full Day Off
-                  </label>
-                  <label>
-                    <input 
-                      type="radio" 
-                      name="type" 
-                      value="partial" 
-                      checked={newExclusion.type === 'partial'} 
-                      onChange={() => setNewExclusion({ ...newExclusion, type: 'partial' })}
-                    /> Specific Slots Off
-                  </label>
-                </div>
-              </div>
-
-              {newExclusion.type === 'partial' && (
-                <div className="modal-form-group">
-                  <label>Select Slots to Disable</label>
-                  <div className="slots-grid">
-                    {timeSlotOptions.map(slot => (
-                      <button 
-                        key={slot} 
-                        type="button"
-                        className={`slot-toggle-btn ${newExclusion.slots.includes(slot) ? 'active' : ''}`}
-                        onClick={() => handleSlotToggle(slot)}
-                      >
-                        {slot}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="modal-actions">
-                <button type="button" onClick={() => setShowExclusionModal(false)} className="btn-cancel">Cancel</button>
-                <button type="submit" className="btn-save" disabled={!newExclusion.date}>Save Restriction</button>
-              </div>
-            </form>
           </div>
         </div>
       )}

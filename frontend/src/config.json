@@ -11,7 +11,7 @@
       "navbar": {
         "home": "ACCUEIL",
         "menu": "LA CARTE",
-        "foodTruck": "FOOD TRUCK",
+        "reservation": "RÉSERVATION",
         "contact": "CONTACT",
         "delivery": "LIVRAISON",
         "order": "COMMANDER"
@@ -97,7 +97,7 @@
       "navbar": {
         "home": "HOME",
         "menu": "MENU",
-        "foodTruck": "FOOD TRUCK",
+        "reservation": "RESERVATION",
         "contact": "CONTACT",
         "delivery": "DELIVERY",
         "order": "ORDER"

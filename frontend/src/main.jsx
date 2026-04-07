@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import FullMenu from './components/FullMenu';
 import OrderPage from './components/OrderPage';
+import ReservationPage from './components/ReservationPage';
 
 const params = new URLSearchParams(window.location.search);
 const page = params.get('page');
@@ -32,6 +33,18 @@ if (page === 'fullmenu') {
         <Navbar />
         <main>
           <OrderPage />
+        </main>
+        <Footer />
+      </div>
+    </LanguageProvider>
+  );
+} else if (page === 'reservation') {
+  Root = (
+    <LanguageProvider>
+      <div className="app">
+        <Navbar />
+        <main>
+          <ReservationPage />
         </main>
         <Footer />
       </div>

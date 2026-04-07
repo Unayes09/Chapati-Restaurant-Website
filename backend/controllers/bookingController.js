@@ -39,8 +39,8 @@ const createBooking = async (req, res) => {
             orderType: 'pickup',
             customer,
             additionalInfo,
-            items,
-            totalAmount,
+            items: Array.isArray(items) ? items : [],
+            totalAmount: Number(totalAmount || 0),
             pickupRequestedInMinutes: Number(pickupRequestedInMinutes),
           }
         : {
@@ -50,8 +50,9 @@ const createBooking = async (req, res) => {
             bookingDate,
             bookingTime,
             additionalInfo,
-            items,
-            totalAmount,
+            items: [],
+            totalAmount: 0,
+            status: 'confirmed',
           },
     );
 
@@ -74,7 +75,7 @@ const createBooking = async (req, res) => {
 
     const emailText = isPickupOrder
       ? `Hello ${customer.name}, your order request has been received. Requested pickup: ${pickupRequestedInMinutes} minutes. We will confirm soon.`
-      : `Hello ${customer.name}, your booking for ${bookingDate} at ${bookingTime} has been received. We will confirm it soon.`;
+      : `Hello ${customer.name}, your reservation is confirmed for ${bookingDate} at ${bookingTime}.`;
 
     const emailHtml = isPickupOrder
       ? `
@@ -97,20 +98,11 @@ const createBooking = async (req, res) => {
       `
       : `
         <h3>Hello ${customer.name},</h3>
-        <p>Your booking for <strong>${bookingDate}</strong> at <strong>${bookingTime}</strong> has been received.</p>
-        <p>Order Summary:</p>
-        <ul>
-          ${safeItems
-            .map(
-              (item) =>
-                `<li>${item.qty}x ${item.label} ${
-                  item.price ? `(€${Number(item.price).toFixed(2)})` : ''
-                }</li>`,
-            )
-            .join('')}
-        </ul>
-        <p>Total Amount: €${Number(totalAmount || 0).toFixed(2)}</p>
-        <p>We will notify you once your booking is confirmed or rejected.</p>
+        <p>Your reservation is <strong>CONFIRMED</strong>.</p>
+        <p><strong>Date:</strong> ${bookingDate}</p>
+        <p><strong>Time:</strong> ${bookingTime}</p>
+        <p><strong>Table size:</strong> ${table?.size || '-'}</p>
+        <p>See you soon!</p>
       `;
 
     await sendEmail(customer.email, emailSubject, emailText, emailHtml);
@@ -124,10 +116,16 @@ const createBooking = async (req, res) => {
 // Admin: Get all bookings with filtering/search
 const getBookings = async (req, res) => {
   try {
-    const { date, time, tableSize, search, status, code, orderType, createdDate } = req.query;
+    const { date, dateFrom, dateTo, time, tableSize, search, status, code, orderType, createdDate, page, limit } = req.query;
     let query = {};
 
-    if (date) query.bookingDate = date;
+    if (date) {
+      query.bookingDate = date;
+    } else if (dateFrom || dateTo) {
+      query.bookingDate = {};
+      if (dateFrom) query.bookingDate.$gte = dateFrom;
+      if (dateTo) query.bookingDate.$lte = dateTo;
+    }
     if (time) query.bookingTime = time;
     if (tableSize) query['table.size'] = tableSize;
     if (status) query.status = status;
@@ -150,8 +148,24 @@ const getBookings = async (req, res) => {
       ];
     }
 
-    const bookings = await Booking.find(query).sort({ createdAt: -1 });
-    res.send(bookings);
+    const safeLimit = Math.min(Math.max(parseInt(limit || '10', 10) || 10, 1), 50);
+    const safePage = Math.max(parseInt(page || '1', 10) || 1, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [total, data] = await Promise.all([
+      Booking.countDocuments(query),
+      Booking.find(query).sort({ createdAt: -1 }).skip(skip).limit(safeLimit),
+    ]);
+
+    res.send({
+      data,
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / safeLimit)),
+      },
+    });
   } catch (error) {
     res.status(500).send({ error: error.message });
   }

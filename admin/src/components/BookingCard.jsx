@@ -49,7 +49,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
   }, [items, totalAmount]);
 
   return (
-    <div className={`booking-row ${expanded ? 'is-expanded' : ''}`}>
+    <div className={`booking-row ${isPickup ? 'booking-row--pickup' : 'booking-row--booking'} ${expanded ? 'is-expanded' : ''}`}>
       <div className="booking-row-main">
         <button
           type="button"
@@ -60,24 +60,24 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
           {expanded ? '−' : '+'}
         </button>
 
-        <div className="booking-row-code">
-          <div className="booking-row-code-top">{orderCode || _id}</div>
-          <div className="booking-row-code-sub">
-            {isPickup ? 'Pickup' : 'Booking'} {createdTimeText ? `• ${createdTimeText}` : ''}
-          </div>
-        </div>
+        {isPickup ? (
+          <>
+            <div className="booking-row-code">
+              <div className="booking-row-code-top">{orderCode || _id}</div>
+              <div className="booking-row-code-sub">
+                Pickup {createdTimeText ? `• ${createdTimeText}` : ''}
+              </div>
+            </div>
 
-        <div className="booking-row-customer">
-          <div className="booking-row-customer-name">{customer?.name}</div>
-          <div className="booking-row-customer-links">
-            <a href={`mailto:${customer?.email}`}>{customer?.email}</a>
-            <a href={`tel:${customer?.phone}`}>{customer?.phone}</a>
-          </div>
-        </div>
+            <div className="booking-row-customer">
+              <div className="booking-row-customer-name">{customer?.name}</div>
+              <div className="booking-row-customer-links">
+                <a href={`mailto:${customer?.email}`}>{customer?.email}</a>
+                <a href={`tel:${customer?.phone}`}>{customer?.phone}</a>
+              </div>
+            </div>
 
-        <div className="booking-row-meta">
-          {isPickup ? (
-            <>
+            <div className="booking-row-meta">
               <div className="booking-row-chip">
                 Req: {pickupRequestedInMinutes ? `${pickupRequestedInMinutes}m` : '-'}
               </div>
@@ -87,47 +87,64 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
               <div className="booking-row-chip">
                 Ready: {readyAtText || '-'}
               </div>
-            </>
-          ) : (
-            <>
-              <div className="booking-row-chip">{bookingDate || '-'}</div>
-              <div className="booking-row-chip">{bookingTime || '-'}</div>
+            </div>
+
+            <div className="booking-row-status">
+              <span className={`badge-pill ${status}`}>{status}</span>
+            </div>
+
+            <div className="booking-row-total">€{computedTotal.toFixed(2)}</div>
+          </>
+        ) : (
+          <>
+            <div className="booking-row-code">
+              <div className="booking-row-code-top">{bookingDate || '-'}</div>
+              <div className="booking-row-code-sub">{bookingTime || '-'}</div>
+            </div>
+
+            <div className="booking-row-name">{customer?.name || '-'}</div>
+            <div className="booking-row-email">
+              <a href={`mailto:${customer?.email}`}>{customer?.email || '-'}</a>
+            </div>
+            <div className="booking-row-phone">
+              <a href={`tel:${customer?.phone}`}>{customer?.phone || '-'}</a>
+            </div>
+
+            <div className="booking-row-meta">
               <div className="booking-row-chip">{table?.size ? `Table ${table.size}` : '-'}</div>
-            </>
-          )}
-        </div>
+            </div>
 
-        <div className="booking-row-status">
-          <span className={`badge-pill ${status}`}>{status}</span>
-        </div>
+            <div className="booking-row-status">
+              {status === 'rejected' && <span className={`badge-pill ${status}`}>{status}</span>}
+            </div>
+          </>
+        )}
 
-        <div className="booking-row-total">
-          €{computedTotal.toFixed(2)}
-        </div>
+        {isPickup && (
+          <div className="booking-row-actions">
+            {status === 'pending' && (
+              <>
+                <button className="btn-row btn-row-primary" type="button" onClick={() => onReceive(booking)}>
+                  Receive
+                </button>
+                <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
+                  Reject
+                </button>
+              </>
+            )}
 
-        <div className="booking-row-actions">
-          {isPickup && status === 'pending' && (
-            <>
-              <button className="btn-row btn-row-primary" type="button" onClick={() => onReceive(booking)}>
-                Receive
-              </button>
-              <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
-                Reject
-              </button>
-            </>
-          )}
-
-          {isPickup && status === 'received' && (
-            <>
-              <button className="btn-row btn-row-primary" type="button" onClick={() => onCollected(_id)}>
-                Collected
-              </button>
-              <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
-                Reject
-              </button>
-            </>
-          )}
-        </div>
+            {status === 'received' && (
+              <>
+                <button className="btn-row btn-row-primary" type="button" onClick={() => onCollected(_id)}>
+                  Collected
+                </button>
+                <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
+                  Reject
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {expanded && (
@@ -138,22 +155,24 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             </div>
           )}
 
-          <div className="booking-row-items">
-            <div className="booking-row-items-title">Items</div>
-            <div className="booking-row-items-list">
-              {(items || []).map((item, idx) => (
-                <div key={idx} className="booking-row-item">
-                  <div className="booking-row-item-left">
-                    <span className="booking-row-item-qty">{item.qty}x</span>
-                    <span className="booking-row-item-name">{item.label}</span>
+          {Array.isArray(items) && items.length > 0 && (
+            <div className="booking-row-items">
+              <div className="booking-row-items-title">Items</div>
+              <div className="booking-row-items-list">
+                {items.map((item, idx) => (
+                  <div key={idx} className="booking-row-item">
+                    <div className="booking-row-item-left">
+                      <span className="booking-row-item-qty">{item.qty}x</span>
+                      <span className="booking-row-item-name">{item.label}</span>
+                    </div>
+                    <div className="booking-row-item-right">
+                      {item.price ? `€${(Number(item.price) * Number(item.qty)).toFixed(2)}` : 'TBD'}
+                    </div>
                   </div>
-                  <div className="booking-row-item-right">
-                    {item.price ? `€${(Number(item.price) * Number(item.qty)).toFixed(2)}` : 'TBD'}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

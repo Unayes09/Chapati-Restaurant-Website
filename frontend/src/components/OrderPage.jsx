@@ -37,6 +37,23 @@ const OrderPage = () => {
     pickupRequestedInMinutes: '30',
   });
 
+  useEffect(() => {
+    const raw = localStorage.getItem('chapatiCustomerInfo');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      setFormData((prev) => ({
+        ...prev,
+        name: parsed?.name || prev.name,
+        email: parsed?.email || prev.email,
+        phone: parsed?.phone || prev.phone,
+        additionalInfo: parsed?.additionalInfo || prev.additionalInfo,
+      }));
+    } catch {
+      return;
+    }
+  }, []);
+
   const total = useMemo(
     () =>
       items.reduce(
@@ -108,6 +125,16 @@ const OrderPage = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create booking');
       }
+
+      localStorage.setItem(
+        'chapatiCustomerInfo',
+        JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          additionalInfo: formData.additionalInfo,
+        }),
+      );
 
       // Success
       setShowSuccessModal(true);

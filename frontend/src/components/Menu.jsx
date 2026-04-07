@@ -1,5 +1,8 @@
 import React from 'react';
 import { useLanguage } from '../LanguageContext';
+import biriyaniImg from '../assets/biriyani.png';
+import curryImg from '../assets/curry.jpeg';
+import naanImg from '../assets/naan.jpeg';
 
 const Menu = () => {
   const { t, lang } = useLanguage();
@@ -33,10 +36,11 @@ const Menu = () => {
           <div className="menu-grid">
             {t.menu.items.map((item, index) => {
               const categoryId = index === 0 ? 'biryani' : index === 1 ? 'curries' : 'naan';
+              const imageSrc = index === 0 ? biriyaniImg : index === 1 ? curryImg : naanImg;
               return (
                 <div key={index} className="menu-card" onClick={() => handleViewFullMenu(categoryId)} style={{ cursor: 'pointer' }}>
                   <div className="menu-card-image">
-                    <img src={`https://images.unsplash.com/photo-${index === 0 ? '1585937421612-70a008356fbe' : index === 1 ? '1604329760661-e71dc83f8f26' : '1585032226651-759b368d7246'}?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80`} alt={item.title} />
+                    <img src={imageSrc} alt={item.title} />
                   </div>
                   <div className="menu-card-content">
                     <h4>{item.title}</h4>

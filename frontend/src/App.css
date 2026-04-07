@@ -56,7 +56,7 @@ body {
   margin: 0;
   font-family: 'Montserrat', sans-serif;
   color: var(--color-dark);
-  background-image: url('https://images.unsplash.com/photo-1585937421612-70a008356fbe?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80');
+  background-image: url('./assets/chapati_food.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed; /* Entire page scrolls over this image */
@@ -1653,6 +1653,30 @@ section {
   border-radius: 4px;
 }
 
+.btn-send:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.footer-form-status {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.footer-form-status-ok {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #bbf7d0;
+}
+
+.footer-form-status-error {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fecaca;
+}
+
 .commander-links {
   display: flex;
   flex-direction: column;
@@ -1834,6 +1858,19 @@ section {
   border-radius: 4px;
   font-size: 14px;
   width: 100%;
+  color: #111;
+}
+
+.footer-contact-combined .footer-form input::placeholder,
+.footer-contact-combined .footer-form textarea::placeholder,
+.footer-contact-combined .footer-form input::-webkit-input-placeholder,
+.footer-contact-combined .footer-form textarea::-webkit-input-placeholder,
+.footer-contact-combined .footer-form input::-moz-placeholder,
+.footer-contact-combined .footer-form textarea::-moz-placeholder,
+.footer-contact-combined .footer-form input:-ms-input-placeholder,
+.footer-contact-combined .footer-form textarea:-ms-input-placeholder {
+  color: #111 !important;
+  opacity: 1;
 }
 
 .footer-form textarea {

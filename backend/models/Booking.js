@@ -48,15 +48,24 @@ const bookingSchema = new mongoose.Schema({
   pickupConfirmedAt: { type: Date },
   pickupReadyAt: { type: Date },
   additionalInfo: { type: String },
-  items: [
+  items: {
+    type: [
     {
       id: { type: String, required: true },
       label: { type: String, required: true },
       price: { type: Number }, // Not mandatory for all items
       qty: { type: Number, required: true },
     }
-  ],
-  totalAmount: { type: Number, required: true },
+    ],
+    default: [],
+  },
+  totalAmount: {
+    type: Number,
+    default: 0,
+    required: function requiredTotalAmount() {
+      return this.orderType === 'pickup';
+    },
+  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'received', 'collected', 'rejected'],
