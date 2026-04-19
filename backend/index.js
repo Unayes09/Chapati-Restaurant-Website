@@ -22,6 +22,10 @@ const io = new Server(server, {
 
 app.set('io', io);
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
