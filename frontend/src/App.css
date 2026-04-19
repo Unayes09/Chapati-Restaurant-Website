@@ -1160,24 +1160,57 @@ section {
   color: #333;
 }
 
-.booking-input, .booking-select, .booking-textarea {
+.booking-input,
+.booking-select,
+.booking-textarea {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px; /* 16px+ avoids iOS zoom-on-focus; still comfortable on desktop */
+  line-height: 1.45;
   outline: none;
   transition: border-color 0.2s;
+  min-height: 44px; /* touch-friendly; keeps inner padding visible on WebKit */
+  background-color: #fff;
+  color: inherit;
 }
 
-.booking-input:focus, .booking-select:focus, .booking-textarea:focus {
+/* WebKit often drops inner padding on date fields unless appearance is normalized */
+.booking-input[type='date'],
+.booking-input[type='time'],
+.booking-input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.booking-input:focus,
+.booking-select:focus,
+.booking-textarea:focus {
   border-color: var(--color-primary);
 }
 
 .booking-textarea {
-  height: 80px;
-  resize: none;
+  min-height: 80px;
+  height: auto;
+  resize: vertical;
+}
+
+/* Page card form (reservation): explicit outer padding — avoids relying on flex sidebar rules only */
+.order-card > form.booking-form-container {
+  display: block;
+  flex: unset;
+  overflow: visible;
+  padding: 32px 40px 40px;
+}
+
+@media (max-width: 600px) {
+  .order-card > form.booking-form-container {
+    padding: 24px 20px 32px;
+  }
 }
 
 .booking-sidebar-footer {
@@ -1510,6 +1543,10 @@ section {
 
 .uber-eats {
   height: 40px;
+}
+
+.deliveroo {
+  height: 38px;
 }
 
 .eat-list {

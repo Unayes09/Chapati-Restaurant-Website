@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { useAdminLanguage } from './AdminLanguageContext.jsx';
 import Navbar from './components/Navbar';
+import AdminSidebar from './components/AdminSidebar';
 import BookingCard from './components/BookingCard';
 import LoginForm from './components/LoginForm';
 import ReservationsPanel from './components/ReservationsPanel';
@@ -12,6 +14,7 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 function App() {
+  const { t } = useAdminLanguage();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '');
   const [activeTab, setActiveTab] = useState('orders');
@@ -53,7 +56,7 @@ function App() {
       setToken(token);
       setIsLoggedIn(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || t('errors.loginFailed'));
     }
   };
 
@@ -199,7 +202,7 @@ function App() {
       });
       fetchBookings();
     } catch (err) {
-      alert('Update failed: ' + (err.response?.data?.error || err.message));
+      alert(t('orders.updateFailed', { msg: err.response?.data?.error || err.message }));
     }
   };
 
@@ -221,7 +224,7 @@ function App() {
       setReceiveTarget(null);
       fetchBookings();
     } catch (err) {
-      alert('Receive failed: ' + (err.response?.data?.error || err.message));
+      alert(t('orders.receiveFailed', { msg: err.response?.data?.error || err.message }));
     }
   };
 
@@ -232,8 +235,18 @@ function App() {
       });
       fetchBookings();
     } catch (err) {
-      alert('Update failed: ' + (err.response?.data?.error || err.message));
+      alert(t('orders.updateFailed', { msg: err.response?.data?.error || err.message }));
     }
+  };
+
+  const handleSidebarNavigate = (tab) => {
+    if (tab === 'orders') {
+      setActiveTab('orders');
+      setFilters((prev) => ({ ...prev, orderType: 'pickup' }));
+      setPage(1);
+      return;
+    }
+    setActiveTab(tab);
   };
 
   if (!isLoggedIn) {
@@ -250,45 +263,11 @@ function App() {
   }
 
   return (
-    <div className="admin-app">
-      <Navbar onLogout={handleLogout} onRefresh={handleRefresh} />
-      
-      <main className="dashboard-main">
-        <div className="admin-top-tabs">
-          <button
-            type="button"
-            className={`admin-top-tab ${activeTab === 'orders' ? 'is-active' : ''}`}
-            onClick={() => {
-              setActiveTab('orders');
-              setFilters((prev) => ({ ...prev, orderType: 'pickup' }));
-              setPage(1);
-            }}
-          >
-            Orders
-          </button>
-          <button
-            type="button"
-            className={`admin-top-tab ${activeTab === 'reservations' ? 'is-active' : ''}`}
-            onClick={() => setActiveTab('reservations')}
-          >
-            Reservations
-          </button>
-          <button
-            type="button"
-            className={`admin-top-tab ${activeTab === 'messages' ? 'is-active' : ''}`}
-            onClick={() => setActiveTab('messages')}
-          >
-            Messages
-          </button>
-          <button
-            type="button"
-            className={`admin-top-tab ${activeTab === 'analytics' ? 'is-active' : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analytics
-          </button>
-        </div>
-
+    <div className="admin-app admin-app--dashboard">
+      <AdminSidebar activeTab={activeTab} onNavigate={handleSidebarNavigate} />
+      <div className="admin-dashboard-body">
+        <Navbar onLogout={handleLogout} onRefresh={handleRefresh} sectionKey={activeTab} />
+        <main className="dashboard-main">
         {activeTab === 'reservations' ? (
           <ReservationsPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
         ) : activeTab === 'messages' ? (
@@ -300,46 +279,46 @@ function App() {
         <section className="admin-controls">
           <div className="search-filters-bar">
             <div className="filter-item">
-              <label>Search</label>
+              <label>{t('common.search')}</label>
               <input 
                 type="text" 
                 name="search" 
-                placeholder="Name, email, phone or code..." 
+                placeholder={t('orders.searchPh')} 
                 value={filters.search}
                 onChange={handleFilterChange}
               />
             </div>
             <div className="filter-item">
-              <label>Type</label>
+              <label>{t('orders.type')}</label>
               <select name="orderType" value={filters.orderType} onChange={handleFilterChange}>
-                <option value="pickup">Pickup Orders</option>
-                <option value="booking">Table Bookings</option>
-                <option value="">All</option>
+                <option value="pickup">{t('orders.pickupOrders')}</option>
+                <option value="booking">{t('orders.tableBookings')}</option>
+                <option value="">{t('common.all')}</option>
               </select>
             </div>
             <div className="filter-item">
-              <label>Status</label>
+              <label>{t('common.status')}</label>
               <select name="status" value={filters.status} onChange={handleFilterChange}>
-                <option value="">All</option>
-                <option value="pending">pending</option>
-                <option value="received">received</option>
-                <option value="collected">collected</option>
-                <option value="rejected">rejected</option>
-                <option value="confirmed">confirmed</option>
+                <option value="">{t('common.all')}</option>
+                <option value="pending">{t('bookingStatus.pending')}</option>
+                <option value="received">{t('bookingStatus.received')}</option>
+                <option value="collected">{t('bookingStatus.collected')}</option>
+                <option value="rejected">{t('bookingStatus.rejected')}</option>
+                <option value="confirmed">{t('bookingStatus.confirmed')}</option>
               </select>
             </div>
             <div className="filter-item">
-              <label>Order Code</label>
+              <label>{t('orders.orderCode')}</label>
               <input
                 type="text"
                 name="code"
-                placeholder="e.g. CH-1234"
+                placeholder={t('orders.orderCodePh')}
                 value={filters.code}
                 onChange={handleFilterChange}
               />
             </div>
             <div className="filter-item">
-              <label>Created Date</label>
+              <label>{t('orders.createdDate')}</label>
               <input
                 type="date"
                 name="createdDate"
@@ -348,7 +327,7 @@ function App() {
               />
             </div>
             <div className="filter-item">
-              <label>Date</label>
+              <label>{t('common.date')}</label>
               <input 
                 type="date" 
                 name="date" 
@@ -357,20 +336,22 @@ function App() {
               />
             </div>
             <div className="filter-item">
-              <label>Time</label>
+              <label>{t('common.time')}</label>
               <select name="time" value={filters.time} onChange={handleFilterChange}>
-                <option value="">All Times</option>
-                {timeSlotOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="">{t('common.allTimes')}</option>
+                {timeSlotOptions.map((slot) => (
+                  <option key={slot} value={slot}>{slot}</option>
+                ))}
               </select>
             </div>
             <div className="filter-item">
-              <label>Table Size</label>
+              <label>{t('orders.tableSize')}</label>
               <select name="tableSize" value={filters.tableSize} onChange={handleFilterChange}>
-                <option value="">All Sizes</option>
-                <option value="2">2 Persons</option>
-                <option value="4">4 Persons</option>
-                <option value="6">6 Persons</option>
-                <option value="8">8 Persons</option>
+                <option value="">{t('orders.allSizes')}</option>
+                <option value="2">2 {t('common.persons')}</option>
+                <option value="4">4 {t('common.persons')}</option>
+                <option value="6">6 {t('common.persons')}</option>
+                <option value="8">8 {t('common.persons')}</option>
               </select>
             </div>
             <button
@@ -380,29 +361,29 @@ function App() {
                 setPage(1);
               }}
             >
-              Reset
+              {t('common.reset')}
             </button>
           </div>
         </section>
 
         <header className="dashboard-header-flex">
-          <h2>Recent Orders ({pagination.total})</h2>
-          {loading && <span className="loading-indicator">Updating...</span>}
+          <h2>{t('orders.recentTitle', { n: pagination.total })}</h2>
+          {loading && <span className="loading-indicator">{t('common.updating')}</span>}
           {!soundEnabled && (
             <button
               type="button"
               className="btn-enable-sound"
               onClick={handleEnableSound}
-              data-tooltip="Enable this once to allow sound notifications when new order comes."
+              data-tooltip={t('orders.enableSoundTip')}
             >
-              Enable Sound
+              {t('orders.enableSound')}
             </button>
           )}
         </header>
 
         {bookings.length === 0 && !loading ? (
           <div className="empty-state">
-            <p>No bookings found with current filters.</p>
+            <p>{t('orders.empty')}</p>
           </div>
         ) : (
           <div className="bookings-list">
@@ -424,10 +405,10 @@ function App() {
             disabled={page <= 1 || loading}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
           >
-            Prev
+            {t('common.prev')}
           </button>
           <div className="page-info">
-            Page {pagination.page} / {pagination.totalPages}
+            {t('common.page')} {pagination.page} / {pagination.totalPages}
           </div>
           <button
             type="button"
@@ -435,44 +416,45 @@ function App() {
             disabled={page >= pagination.totalPages || loading}
             onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
           >
-            Next
+            {t('common.next')}
           </button>
         </div>
         </>
         )}
-      </main>
+        </main>
+      </div>
 
       {showReceiveModal && (
         <div className="admin-modal-overlay">
           <div className="admin-modal">
             <header>
-              <h3>Receive Order</h3>
-              <button onClick={() => setShowReceiveModal(false)}>&times;</button>
+              <h3>{t('orders.receiveTitle')}</h3>
+              <button type="button" onClick={() => setShowReceiveModal(false)}>&times;</button>
             </header>
             <div className="modal-form-group">
-              <label>Order</label>
+              <label>{t('common.order')}</label>
               <div style={{ fontWeight: 800 }}>
                 {receiveTarget?.orderCode || receiveTarget?._id}
               </div>
             </div>
             <div className="modal-form-group">
-              <label>Requested</label>
+              <label>{t('common.requested')}</label>
               <div style={{ fontWeight: 700, color: '#636e72' }}>
-                {receiveTarget?.pickupRequestedInMinutes ? `${receiveTarget.pickupRequestedInMinutes} min` : '-'}
+                {receiveTarget?.pickupRequestedInMinutes ? `${receiveTarget.pickupRequestedInMinutes} ${t('common.min')}` : '-'}
               </div>
             </div>
             <div className="modal-form-group">
-              <label>Confirm pickup in</label>
+              <label>{t('common.confirmPickupIn')}</label>
               <select value={receiveMinutes} onChange={(e) => setReceiveMinutes(e.target.value)}>
-                <option value="15">15 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
+                <option value="15">15 {t('common.min')}</option>
+                <option value="30">30 {t('common.min')}</option>
+                <option value="45">45 {t('common.min')}</option>
+                <option value="60">60 {t('common.min')}</option>
               </select>
             </div>
             <div className="modal-actions">
-              <button type="button" onClick={() => setShowReceiveModal(false)} className="btn-cancel">Cancel</button>
-              <button type="button" onClick={confirmReceive} className="btn-save">Confirm</button>
+              <button type="button" onClick={() => setShowReceiveModal(false)} className="btn-cancel">{t('common.cancel')}</button>
+              <button type="button" onClick={confirmReceive} className="btn-save">{t('common.confirm')}</button>
             </div>
           </div>
         </div>

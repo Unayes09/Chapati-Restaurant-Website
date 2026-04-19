@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAdminLanguage } from '../AdminLanguageContext.jsx';
 
 const formatParisDateTime = (iso) => {
   if (!iso) return '';
@@ -24,6 +25,7 @@ const buildPreview = (value) => {
 };
 
 const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
+  const { t } = useAdminLanguage();
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [filters, setFilters] = useState({ search: '', status: '' });
@@ -72,7 +74,7 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
   };
 
   const deleteMessage = async (id) => {
-    if (!window.confirm('Delete this message?')) return;
+    if (!window.confirm(t('messages.deleteConfirm'))) return;
     try {
       await axios.delete(`${apiUrl}/api/messages/${id}`, { headers: { Authorization: `Bearer ${token}` } });
       setSelectedId((prev) => (prev === id ? '' : prev));
@@ -99,21 +101,21 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
       <section className="admin-controls">
         <div className="search-filters-bar">
           <div className="filter-item">
-            <label>Search</label>
+            <label>{t('common.search')}</label>
             <input
               type="text"
               name="search"
-              placeholder="Name, email, phone, message..."
+              placeholder={t('messages.searchPh')}
               value={filters.search}
               onChange={handleFilterChange}
             />
           </div>
           <div className="filter-item">
-            <label>Status</label>
+            <label>{t('common.status')}</label>
             <select name="status" value={filters.status} onChange={handleFilterChange}>
-              <option value="">All</option>
-              <option value="new">new</option>
-              <option value="read">read</option>
+              <option value="">{t('common.all')}</option>
+              <option value="new">{t('messageStatus.new')}</option>
+              <option value="read">{t('messageStatus.read')}</option>
             </select>
           </div>
           <button
@@ -124,30 +126,30 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
               setPage(1);
             }}
           >
-            Reset
+            {t('common.reset')}
           </button>
         </div>
       </section>
 
       <header className="dashboard-header-flex">
-        <h2>Messages ({pagination.total})</h2>
-        {loading && <span className="loading-indicator">Updating...</span>}
+        <h2>{t('messages.title', { n: pagination.total })}</h2>
+        {loading && <span className="loading-indicator">{t('common.updating')}</span>}
       </header>
 
       {rows.length === 0 && !loading ? (
         <div className="empty-state">
-          <p>No messages found.</p>
+          <p>{t('messages.empty')}</p>
         </div>
       ) : (
         <>
           <div className="messages-table">
             <div className="messages-head">
-              <div>Date</div>
-              <div>Name</div>
-              <div>Email</div>
-              <div>Phone</div>
-              <div>Message</div>
-              <div>Actions</div>
+              <div>{t('messages.colDate')}</div>
+              <div>{t('messages.colName')}</div>
+              <div>{t('messages.colEmail')}</div>
+              <div>{t('messages.colPhone')}</div>
+              <div>{t('messages.colMessage')}</div>
+              <div>{t('messages.colActions')}</div>
             </div>
             {rows.map((m) => (
               <div key={m._id} className={`messages-row ${m.status === 'new' ? 'is-new' : ''}`}>
@@ -172,11 +174,11 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
                 <div className="messages-actions">
                   {m.status === 'new' && (
                     <button type="button" className="btn-mini" onClick={() => markRead(m._id)}>
-                      Mark read
+                      {t('messages.markRead')}
                     </button>
                   )}
                   <button type="button" className="btn-mini btn-mini-danger" onClick={() => deleteMessage(m._id)}>
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -186,30 +188,30 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
           {selectedMessage && (
             <div className="message-details-panel">
               <div className="message-details-header">
-                <div className="message-details-title">Message Details</div>
+                <div className="message-details-title">{t('messages.detailsTitle')}</div>
                 <button type="button" className="btn-mini" onClick={() => setSelectedId('')}>
-                  Close
+                  {t('common.close')}
                 </button>
               </div>
               <div className="message-details-grid">
                 <div>
-                  <div className="message-details-label">Name</div>
+                  <div className="message-details-label">{t('messages.colName')}</div>
                   <div className="message-details-value">{selectedMessage.name}</div>
                 </div>
                 <div>
-                  <div className="message-details-label">Email</div>
+                  <div className="message-details-label">{t('messages.colEmail')}</div>
                   <div className="message-details-value">
                     <a href={`mailto:${selectedMessage.email}`}>{selectedMessage.email}</a>
                   </div>
                 </div>
                 <div>
-                  <div className="message-details-label">Phone</div>
+                  <div className="message-details-label">{t('messages.colPhone')}</div>
                   <div className="message-details-value">
                     <a href={`tel:${selectedMessage.phone}`}>{selectedMessage.phone || '-'}</a>
                   </div>
                 </div>
                 <div>
-                  <div className="message-details-label">Date</div>
+                  <div className="message-details-label">{t('messages.colDate')}</div>
                   <div className="message-details-value">{formatParisDateTime(selectedMessage.createdAt)}</div>
                 </div>
               </div>
@@ -217,11 +219,11 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
               <div className="message-details-actions">
                 {selectedMessage.status === 'new' && (
                   <button type="button" className="btn-mini" onClick={() => markRead(selectedMessage._id)}>
-                    Mark read
+                    {t('messages.markRead')}
                   </button>
                 )}
                 <button type="button" className="btn-mini btn-mini-danger" onClick={() => deleteMessage(selectedMessage._id)}>
-                  Delete
+                  {t('common.delete')}
                 </button>
               </div>
             </div>
@@ -231,10 +233,10 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
 
       <div className="pagination-bar">
         <button type="button" className="btn-page" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-          Prev
+          {t('common.prev')}
         </button>
         <div className="page-info">
-          Page {pagination.page} / {pagination.totalPages}
+          {t('common.page')} {pagination.page} / {pagination.totalPages}
         </div>
         <button
           type="button"
@@ -242,7 +244,7 @@ const MessagesPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
           disabled={page >= pagination.totalPages || loading}
           onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
         >
-          Next
+          {t('common.next')}
         </button>
       </div>
     </>

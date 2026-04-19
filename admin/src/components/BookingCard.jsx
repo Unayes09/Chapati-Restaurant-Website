@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
+import { useAdminLanguage } from '../AdminLanguageContext.jsx';
 
 const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
+  const { t } = useAdminLanguage();
   const [expanded, setExpanded] = useState(false);
   const {
     customer,
@@ -48,6 +50,8 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
     return items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
   }, [items, totalAmount]);
 
+  const statusLabel = status ? t(`bookingStatus.${status}`) : '';
+
   return (
     <div className={`booking-row ${isPickup ? 'booking-row--pickup' : 'booking-row--booking'} ${expanded ? 'is-expanded' : ''}`}>
       <div className="booking-row-main">
@@ -55,7 +59,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
           type="button"
           className="booking-row-expand"
           onClick={() => setExpanded((v) => !v)}
-          aria-label={expanded ? 'Collapse' : 'Expand'}
+          aria-label={expanded ? t('bookingCard.collapse') : t('bookingCard.expand')}
         >
           {expanded ? '−' : '+'}
         </button>
@@ -65,7 +69,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             <div className="booking-row-code">
               <div className="booking-row-code-top">{orderCode || _id}</div>
               <div className="booking-row-code-sub">
-                Pickup {createdTimeText ? `• ${createdTimeText}` : ''}
+                {t('bookingCard.pickup')} {createdTimeText ? `• ${createdTimeText}` : ''}
               </div>
             </div>
 
@@ -79,18 +83,18 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
 
             <div className="booking-row-meta">
               <div className="booking-row-chip">
-                Req: {pickupRequestedInMinutes ? `${pickupRequestedInMinutes}m` : '-'}
+                {t('bookingCard.req')}: {pickupRequestedInMinutes ? `${pickupRequestedInMinutes}m` : '-'}
               </div>
               <div className="booking-row-chip">
-                Conf: {pickupConfirmedInMinutes ? `${pickupConfirmedInMinutes}m` : '-'}
+                {t('bookingCard.conf')}: {pickupConfirmedInMinutes ? `${pickupConfirmedInMinutes}m` : '-'}
               </div>
               <div className="booking-row-chip">
-                Ready: {readyAtText || '-'}
+                {t('bookingCard.ready')}: {readyAtText || '-'}
               </div>
             </div>
 
             <div className="booking-row-status">
-              <span className={`badge-pill ${status}`}>{status}</span>
+              <span className={`badge-pill ${status}`}>{statusLabel}</span>
             </div>
 
             <div className="booking-row-total">€{computedTotal.toFixed(2)}</div>
@@ -111,11 +115,13 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             </div>
 
             <div className="booking-row-meta">
-              <div className="booking-row-chip">{table?.size ? `Table ${table.size}` : '-'}</div>
+              <div className="booking-row-chip">
+                {table?.size ? `${t('bookingCard.table')} ${table.size}` : '-'}
+              </div>
             </div>
 
             <div className="booking-row-status">
-              {status === 'rejected' && <span className={`badge-pill ${status}`}>{status}</span>}
+              {status === 'rejected' && <span className={`badge-pill ${status}`}>{statusLabel}</span>}
             </div>
           </>
         )}
@@ -125,10 +131,10 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             {status === 'pending' && (
               <>
                 <button className="btn-row btn-row-primary" type="button" onClick={() => onReceive(booking)}>
-                  Receive
+                  {t('bookingCard.receive')}
                 </button>
                 <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
-                  Reject
+                  {t('bookingCard.reject')}
                 </button>
               </>
             )}
@@ -136,10 +142,10 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             {status === 'received' && (
               <>
                 <button className="btn-row btn-row-primary" type="button" onClick={() => onCollected(_id)}>
-                  Collected
+                  {t('bookingCard.collected')}
                 </button>
                 <button className="btn-row btn-row-danger" type="button" onClick={() => onReject(_id)}>
-                  Reject
+                  {t('bookingCard.reject')}
                 </button>
               </>
             )}
@@ -151,13 +157,13 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
         <div className="booking-row-details">
           {additionalInfo && (
             <div className="booking-row-note">
-              <strong>Note:</strong> {additionalInfo}
+              <strong>{t('bookingCard.note')}:</strong> {additionalInfo}
             </div>
           )}
 
           {Array.isArray(items) && items.length > 0 && (
             <div className="booking-row-items">
-              <div className="booking-row-items-title">Items</div>
+              <div className="booking-row-items-title">{t('bookingCard.items')}</div>
               <div className="booking-row-items-list">
                 {items.map((item, idx) => (
                   <div key={idx} className="booking-row-item">
@@ -166,7 +172,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
                       <span className="booking-row-item-name">{item.label}</span>
                     </div>
                     <div className="booking-row-item-right">
-                      {item.price ? `€${(Number(item.price) * Number(item.qty)).toFixed(2)}` : 'TBD'}
+                      {item.price ? `€${(Number(item.price) * Number(item.qty)).toFixed(2)}` : t('bookingCard.tbd')}
                     </div>
                   </div>
                 ))}

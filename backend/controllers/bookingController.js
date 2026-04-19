@@ -105,7 +105,8 @@ const createBooking = async (req, res) => {
         <p>See you soon!</p>
       `;
 
-    await sendEmail(customer.email, emailSubject, emailText, emailHtml);
+    const mailResult = await sendEmail(customer.email, emailSubject, emailText, emailHtml);
+    if (!mailResult.ok) console.error('[booking] createBooking email failed:', mailResult.error);
 
     res.status(201).send(booking);
   } catch (error) {
@@ -202,7 +203,8 @@ const receiveOrder = async (req, res) => {
       <p>Please show your pickup code at the counter.</p>
     `;
 
-    await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    const mailReceive = await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    if (!mailReceive.ok) console.error('[booking] receiveOrder email failed:', mailReceive.error);
 
     res.send(booking);
   } catch (error) {
@@ -245,7 +247,8 @@ const confirmBooking = async (req, res) => {
       <p>We look forward to serving you!</p>
     `;
 
-    await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    const mailConfirm = await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    if (!mailConfirm.ok) console.error('[booking] confirmBooking email failed:', mailConfirm.error);
 
     res.send(booking);
   } catch (error) {
@@ -282,7 +285,8 @@ const rejectBooking = async (req, res) => {
         <p>Please feel free to book for another time or contact us directly.</p>
       `;
 
-    await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    const mailReject = await sendEmail(booking.customer.email, emailSubject, emailText, emailHtml);
+    if (!mailReject.ok) console.error('[booking] rejectBooking email failed:', mailReject.error);
 
     res.send(booking);
   } catch (error) {

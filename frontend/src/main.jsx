@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+/* Ensure order / reservation / fullmenu routes get the same layout + form styles as the home App bundle */
+import './App.css';
 import App from './App.jsx';
 import { LanguageProvider } from './LanguageContext';
 import Navbar from './components/Navbar';

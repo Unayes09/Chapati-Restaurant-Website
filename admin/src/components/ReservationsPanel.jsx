@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAdminLanguage } from '../AdminLanguageContext.jsx';
 import BookingCard from './BookingCard';
 
 const getParisTodayDateStr = () => {
@@ -22,6 +23,7 @@ const buildTimeSlotOptions = () => {
 };
 
 const ReservationsPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
+  const { t } = useAdminLanguage();
   const [loading, setLoading] = useState(false);
   const [reservations, setReservations] = useState([]);
   const [filters, setFilters] = useState({
@@ -90,34 +92,34 @@ const ReservationsPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
       <section className="admin-controls">
         <div className="search-filters-bar">
           <div className="filter-item">
-            <label>Search</label>
+            <label>{t('common.search')}</label>
             <input
               type="text"
               name="search"
-              placeholder="Name, email or phone..."
+              placeholder={t('reservations.searchPh')}
               value={filters.search}
               onChange={handleFilterChange}
             />
           </div>
           <div className="filter-item">
-            <label>Date</label>
+            <label>{t('common.date')}</label>
             <input type="date" name="date" value={filters.date} onChange={handleFilterChange} />
           </div>
           <div className="filter-item">
-            <label>Date From</label>
+            <label>{t('reservations.dateFrom')}</label>
             <input type="date" name="dateFrom" value={filters.dateFrom} onChange={handleFilterChange} />
           </div>
           <div className="filter-item">
-            <label>Date To</label>
+            <label>{t('reservations.dateTo')}</label>
             <input type="date" name="dateTo" value={filters.dateTo} onChange={handleFilterChange} />
           </div>
           <div className="filter-item">
-            <label>Time</label>
+            <label>{t('common.time')}</label>
             <select name="time" value={filters.time} onChange={handleFilterChange}>
-              <option value="">All Times</option>
-              {timeSlotOptions.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              <option value="">{t('common.allTimes')}</option>
+              {timeSlotOptions.map((slot) => (
+                <option key={slot} value={slot}>
+                  {slot}
                 </option>
               ))}
             </select>
@@ -130,19 +132,19 @@ const ReservationsPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
               setPage(1);
             }}
           >
-            Today
+            {t('reservations.today')}
           </button>
         </div>
       </section>
 
       <header className="dashboard-header-flex">
-        <h2>Reservations ({pagination.total})</h2>
-        {loading && <span className="loading-indicator">Updating...</span>}
+        <h2>{t('reservations.title', { n: pagination.total })}</h2>
+        {loading && <span className="loading-indicator">{t('common.updating')}</span>}
       </header>
 
       {reservations.length === 0 && !loading ? (
         <div className="empty-state">
-          <p>No reservations found.</p>
+          <p>{t('reservations.empty')}</p>
         </div>
       ) : (
         <div className="bookings-list">
@@ -162,10 +164,10 @@ const ReservationsPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
           disabled={page <= 1 || loading}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
-          Prev
+          {t('common.prev')}
         </button>
         <div className="page-info">
-          Page {pagination.page} / {pagination.totalPages}
+          {t('common.page')} {pagination.page} / {pagination.totalPages}
         </div>
         <button
           type="button"
@@ -173,7 +175,7 @@ const ReservationsPanel = ({ token, apiUrl, onUnauthorized, refreshTick }) => {
           disabled={page >= pagination.totalPages || loading}
           onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
         >
-          Next
+          {t('common.next')}
         </button>
       </div>
     </>
