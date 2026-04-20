@@ -118,6 +118,7 @@ const en = {
     receive: 'Receive',
     reject: 'Reject',
     collected: 'Collected',
+    printReceipt: 'Print',
   },
   analytics: {
     title: 'Analytics',
@@ -342,6 +343,7 @@ const fr = {
     receive: 'Prendre',
     reject: 'Refuser',
     collected: 'Récupéré',
+    printReceipt: 'Imprimer',
   },
   analytics: {
     title: 'Analytique',

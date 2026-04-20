@@ -1302,6 +1302,7 @@ body {
 
 .btn-row-primary { background: var(--success); color: white; }
 .btn-row-danger { background: var(--danger); color: white; }
+.btn-row-neutral { background: #334155; color: white; }
 
 .booking-row-details {
   border-top: 1px solid #f1f5f9;
