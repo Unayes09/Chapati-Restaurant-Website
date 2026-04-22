@@ -74,7 +74,7 @@ body {
   position: absolute;
   width: 100%;
   top: 0;
-  z-index: 1000;
+  z-index: 1100;
   padding: 15px 0;
 }
 
@@ -186,7 +186,7 @@ body {
   border: none;
   cursor: pointer;
   padding: 10px;
-  z-index: 1001;
+  z-index: 1101;
 }
 
 .hamburger {
