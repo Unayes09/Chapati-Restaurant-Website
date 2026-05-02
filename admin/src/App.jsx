@@ -13,6 +13,12 @@ import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+/** Loud alert beep length (s) + gap (ms) between repeats while a new order modal is open */
+const ORDER_ALERT_BEEP_S = 0.72;
+const ORDER_ALERT_GAP_MS = 1000;
+const ORDER_ALERT_CYCLE_MS = ORDER_ALERT_BEEP_S * 1000 + ORDER_ALERT_GAP_MS;
+const NEW_ORDER_ALERT_TIMEOUT_MS = 60_000;
+
 function App() {
   const { t } = useAdminLanguage();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -36,6 +42,10 @@ function App() {
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [receiveTarget, setReceiveTarget] = useState(null);
   const [receiveMinutes, setReceiveMinutes] = useState('30');
+  const [incomingOrderQueue, setIncomingOrderQueue] = useState([]);
+  const [alertBooking, setAlertBooking] = useState(null);
+  const [newOrderMinutes, setNewOrderMinutes] = useState('30');
+  const [alertLoadFailed, setAlertLoadFailed] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const audioCtxRef = useRef(null);
   const soundEnabledRef = useRef(false);
@@ -65,6 +75,9 @@ function App() {
     setToken('');
     setIsLoggedIn(false);
     setBookings([]);
+    setIncomingOrderQueue([]);
+    setAlertBooking(null);
+    setAlertLoadFailed(false);
     setSoundEnabled(false);
     audioCtxRef.current = null;
     soundEnabledRef.current = false;
@@ -159,12 +172,125 @@ function App() {
     }
   }, [ensureAudioContext]);
 
+  const playOrderAlertBeep = useCallback(async () => {
+    if (!soundEnabledRef.current) return;
+    const ctx = await ensureAudioContext();
+    if (!ctx) return;
+
+    try {
+      const duration = ORDER_ALERT_BEEP_S;
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc1.type = 'square';
+      osc2.type = 'square';
+      osc1.frequency.value = 784;
+      osc2.frequency.value = 988;
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.72, now + 0.04);
+      gain.gain.setValueAtTime(0.72, now + duration - 0.05);
+      gain.gain.linearRampToValueAtTime(0, now + duration);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + duration);
+      osc2.stop(now + duration);
+    } catch {
+      return;
+    }
+  }, [ensureAudioContext]);
+
   const handleEnableSound = async () => {
     setSoundEnabled(true);
     soundEnabledRef.current = true;
     await ensureAudioContext();
     await playBeep({ seconds: 0.25 });
   };
+
+  const queueHeadId = incomingOrderQueue[0]?.id;
+
+  useEffect(() => {
+    if (!queueHeadId || !token) {
+      setAlertBooking(null);
+      setAlertLoadFailed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAlertLoadFailed(false);
+
+    (async () => {
+      try {
+        const res = await axios.get(
+          `${API_URL}/api/bookings?id=${encodeURIComponent(queueHeadId)}&limit=1&page=1`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const list = Array.isArray(res.data) ? res.data : res.data.data || [];
+        const b = list[0];
+        if (cancelled) return;
+        if (b) {
+          setAlertBooking(b);
+          setNewOrderMinutes(String(b.pickupRequestedInMinutes || 30));
+          setAlertLoadFailed(false);
+        } else {
+          setAlertBooking(null);
+          setAlertLoadFailed(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setAlertBooking(null);
+          setAlertLoadFailed(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [queueHeadId, token]);
+
+  useEffect(() => {
+    if (!alertBooking?._id) return;
+    if (alertBooking.status !== 'pending') {
+      const headId = String(alertBooking._id);
+      setAlertBooking(null);
+      setIncomingOrderQueue((q) => {
+        if (!q.length || String(q[0].id) !== headId) return q;
+        return q.slice(1);
+      });
+    }
+  }, [alertBooking]);
+
+  useEffect(() => {
+    if (!alertBooking || alertBooking.status !== 'pending') return;
+    const id = String(alertBooking._id);
+    const timer = setTimeout(() => {
+      setAlertBooking(null);
+      setIncomingOrderQueue((q) => {
+        if (!q.length || String(q[0].id) !== id) return q;
+        return q.slice(1);
+      });
+      window.alert(t('orders.newOrderTimeout'));
+    }, NEW_ORDER_ALERT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [alertBooking, t]);
+
+  useEffect(() => {
+    if (!soundEnabled || !alertBooking || alertBooking.status !== 'pending') return;
+    let cancelled = false;
+    const fire = () => {
+      if (!cancelled) void playOrderAlertBeep();
+    };
+    fire();
+    const intervalId = setInterval(fire, ORDER_ALERT_CYCLE_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [soundEnabled, alertBooking, playOrderAlertBeep]);
 
   useEffect(() => {
     if (token) {
@@ -177,15 +303,21 @@ function App() {
     if (!token) return;
     const socket = io(API_URL, { transports: ['websocket'] });
 
-    socket.on('new_order', () => {
-      playBeep({ seconds: 1.0 });
+    socket.on('new_order', (payload) => {
       fetchBookings();
+      const rawId = payload?.id;
+      const id = rawId != null ? String(rawId) : '';
+      if (!id) return;
+      setIncomingOrderQueue((prev) => {
+        if (prev.some((p) => String(p.id) === id)) return prev;
+        return [...prev, { id, orderCode: payload?.orderCode, createdAt: payload?.createdAt }];
+      });
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [token, fetchBookings, playBeep]);
+  }, [token, fetchBookings]);
 
   const timeSlotOptions = [];
   for (let h = 11; h <= 23; h++) {
@@ -203,7 +335,40 @@ function App() {
       fetchBookings();
     } catch (err) {
       alert(t('orders.updateFailed', { msg: err.response?.data?.error || err.message }));
+      throw err;
     }
+  };
+
+  const confirmNewOrderAlertReceive = async () => {
+    if (!alertBooking?._id) return;
+    try {
+      await axios.patch(`${API_URL}/api/bookings/${alertBooking._id}/receive`, {
+        confirmedMinutes: Number(newOrderMinutes),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAlertBooking(null);
+      setIncomingOrderQueue((q) => q.slice(1));
+      fetchBookings();
+    } catch (err) {
+      alert(t('orders.receiveFailed', { msg: err.response?.data?.error || err.message }));
+    }
+  };
+
+  const rejectNewOrderAlert = async () => {
+    if (!alertBooking?._id) return;
+    try {
+      await rejectOrder(alertBooking._id);
+      setAlertBooking(null);
+      setIncomingOrderQueue((q) => q.slice(1));
+    } catch {
+      /* rejectOrder already alerted */
+    }
+  };
+
+  const skipFailedOrderAlert = () => {
+    setAlertBooking(null);
+    setIncomingOrderQueue((q) => q.slice(1));
   };
 
   const openReceiveModal = (booking) => {
@@ -456,6 +621,129 @@ function App() {
               <button type="button" onClick={() => setShowReceiveModal(false)} className="btn-cancel">{t('common.cancel')}</button>
               <button type="button" onClick={confirmReceive} className="btn-save">{t('common.confirm')}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {incomingOrderQueue.length > 0 && (
+        <div
+          className="admin-modal-overlay admin-modal-overlay--order-alert"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="new-order-alert-title"
+        >
+          <div className="admin-modal admin-modal--order-alert">
+            <header>
+              <h3 id="new-order-alert-title">{t('orders.newOrderTitle')}</h3>
+            </header>
+            {incomingOrderQueue.length > 1 && (
+              <p className="new-order-alert-queue">
+                {t('orders.newOrderQueueHint', { n: incomingOrderQueue.length - 1 })}
+              </p>
+            )}
+            {!soundEnabled && (
+              <p className="new-order-alert-meta" style={{ color: '#c27c00', fontWeight: 700 }}>
+                {t('orders.enableSoundTip')}
+              </p>
+            )}
+            {alertLoadFailed ? (
+              <>
+                <p className="new-order-alert-meta">{t('orders.newOrderNotFound')}</p>
+                <div className="modal-actions">
+                  <button type="button" className="btn-save" onClick={skipFailedOrderAlert}>
+                    {t('common.close')}
+                  </button>
+                </div>
+              </>
+            ) : !alertBooking ? (
+              <p className="new-order-alert-meta">{t('orders.newOrderLoading')}</p>
+            ) : (
+              <>
+                <div className="modal-form-group">
+                  <label>{t('common.order')}</label>
+                  <div style={{ fontWeight: 800, fontSize: 18 }}>{alertBooking.orderCode || alertBooking._id}</div>
+                </div>
+                <div className="new-order-alert-meta">
+                  <strong>{alertBooking.customer?.name || '—'}</strong>
+                  {' · '}
+                  {alertBooking.customer?.phone || '—'}
+                  <br />
+                  {alertBooking.customer?.email || '—'}
+                </div>
+                {alertBooking.status === 'pending' ? (
+                  <>
+                    {alertBooking.additionalInfo ? (
+                      <div className="modal-form-group">
+                        <label>{t('bookingCard.note')}</label>
+                        <div className="new-order-alert-meta" style={{ whiteSpace: 'pre-wrap' }}>
+                          {alertBooking.additionalInfo}
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="modal-form-group">
+                      <label>{t('common.requested')}</label>
+                      <div style={{ fontWeight: 700 }}>
+                        {alertBooking.pickupRequestedInMinutes != null
+                          ? `${alertBooking.pickupRequestedInMinutes} ${t('common.min')}`
+                          : '—'}
+                      </div>
+                    </div>
+                    {Array.isArray(alertBooking.items) && alertBooking.items.length > 0 ? (
+                      <div className="modal-form-group">
+                        <label>{t('bookingCard.items')}</label>
+                        <ul className="new-order-alert-items">
+                          {alertBooking.items.map((it) => {
+                            const qty = Number(it.qty) || 0;
+                            const line = (Number(it.price) || 0) * qty;
+                            return (
+                              <li key={it.id || `${it.label}-${qty}`}>
+                                <span>
+                                  {qty}× {it.label}
+                                </span>
+                                <span>{line > 0 ? `€${line.toFixed(2)}` : ''}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ) : null}
+                    <p className="new-order-alert-total">
+                      {t('common.total')}: €
+                      {(() => {
+                        if (typeof alertBooking.totalAmount === 'number') {
+                          return alertBooking.totalAmount.toFixed(2);
+                        }
+                        const items = Array.isArray(alertBooking.items) ? alertBooking.items : [];
+                        const sum = items.reduce(
+                          (s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0),
+                          0,
+                        );
+                        return sum.toFixed(2);
+                      })()}
+                    </p>
+                    <div className="modal-form-group">
+                      <label>{t('common.confirmPickupIn')}</label>
+                      <select value={newOrderMinutes} onChange={(e) => setNewOrderMinutes(e.target.value)}>
+                        <option value="15">15 {t('common.min')}</option>
+                        <option value="30">30 {t('common.min')}</option>
+                        <option value="45">45 {t('common.min')}</option>
+                        <option value="60">60 {t('common.min')}</option>
+                      </select>
+                    </div>
+                    <div className="modal-actions modal-actions--stack">
+                      <button type="button" className="btn-reject-order" onClick={rejectNewOrderAlert}>
+                        {t('orders.newOrderReject')}
+                      </button>
+                      <button type="button" className="btn-accept-order" onClick={confirmNewOrderAlertReceive}>
+                        {t('orders.newOrderAccept')}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <p className="new-order-alert-meta">{t('orders.newOrderLoading')}</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

@@ -120,8 +120,12 @@ const createBooking = async (req, res) => {
 // Admin: Get all bookings with filtering/search
 const getBookings = async (req, res) => {
   try {
-    const { date, dateFrom, dateTo, time, tableSize, search, status, code, orderType, createdDate, page, limit } = req.query;
+    const { date, dateFrom, dateTo, time, tableSize, search, status, code, orderType, createdDate, page, limit, id } = req.query;
     let query = {};
+
+    if (id && /^[a-fA-F0-9]{24}$/.test(String(id))) {
+      query._id = String(id);
+    }
 
     if (date) {
       query.bookingDate = date;
