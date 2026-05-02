@@ -1,6 +1,65 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
 
+const MENU_IDS_NEED_SPICE = new Set([
+  'menu-sagorika',
+  'chicken-curry',
+  'lamb-curry',
+  'chicken-korma',
+  'lamb-korma',
+  'chicken-dhansak',
+  'lamb-dhansak',
+  'butter-chicken',
+  'chicken-tikka-masala',
+  'lamb-tikka-masala',
+  'chicken-jalfrezi',
+  'lamb-jalfrezi',
+  'chicken-balti',
+  'lamb-balti',
+  'chicken-biryani',
+  'lamb-biryani',
+  'vegetable-biryani',
+  'special-biryani',
+]);
+
+const itemNeedsSpice = (id) => MENU_IDS_NEED_SPICE.has(id);
+
+const normalizeSpiceLevels = (item) => {
+  if (!itemNeedsSpice(item.id)) return item;
+  const q = Math.max(1, item.qty || 1);
+  let sl = Array.isArray(item.spiceLevels) ? [...item.spiceLevels] : [];
+  while (sl.length < q) sl.push('0');
+  sl = sl.slice(0, q);
+  return { ...item, spiceLevels: sl };
+};
+
+const normalizeOrderItems = (arr) =>
+  Array.isArray(arr) ? arr.map((item) => normalizeSpiceLevels(item)) : [];
+
+const appendSpiceToLabel = (item, isFr) => {
+  if (!itemNeedsSpice(item.id)) return item.label;
+  const q = item.qty || 1;
+  const levels = [...(item.spiceLevels || [])];
+  while (levels.length < q) levels.push('0');
+  const slice = levels.slice(0, q);
+  const labelFor = (code) => {
+    switch (code) {
+      case '1':
+        return isFr ? 'une épice' : 'one spice';
+      case '2':
+        return isFr ? 'deux épices' : 'two spices';
+      case '3':
+        return isFr ? 'trois épices' : 'three spices';
+      default:
+        return isFr ? 'sans épice' : 'no spice';
+    }
+  };
+  const parts = slice.map((code, idx) =>
+    `${isFr ? 'Portion' : 'Unit'} ${idx + 1}: ${labelFor(code)}`,
+  );
+  return `${item.label} [${isFr ? 'Épices' : 'Spice'}: ${parts.join(isFr ? ' ; ' : '; ')}]`;
+};
+
 const pickupOptions = [
   { value: 15, label: '15 min' },
   { value: 30, label: '30 min' },
@@ -18,7 +77,7 @@ const OrderPage = () => {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        return parsed;
+        return normalizeOrderItems(parsed);
       }
       return [];
     } catch {
@@ -68,15 +127,37 @@ const OrderPage = () => {
   }, [items]);
 
   const updateQty = (id, delta) => {
-    setItems((prev) => {
-      return prev
-        .map((item) =>
-          item.id === id
-            ? { ...item, qty: Math.max(0, (item.qty || 0) + delta) }
-            : item,
-        )
-        .filter((item) => item.qty > 0);
-    });
+    setItems((prev) =>
+      prev
+        .map((item) => {
+          if (item.id !== id) return item;
+          const newQty = Math.max(0, (item.qty || 0) + delta);
+          if (!itemNeedsSpice(item.id)) {
+            return { ...item, qty: newQty };
+          }
+          let spiceLevels = Array.isArray(item.spiceLevels) ? [...item.spiceLevels] : [];
+          if (delta > 0) {
+            while (spiceLevels.length < newQty) spiceLevels.push('0');
+          } else {
+            spiceLevels = spiceLevels.slice(0, newQty);
+          }
+          return { ...item, qty: newQty, spiceLevels };
+        })
+        .filter((item) => item.qty > 0),
+    );
+  };
+
+  const setSpiceAtIndex = (id, index, code) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id || !itemNeedsSpice(item.id)) return item;
+        const q = item.qty || 1;
+        const next = [...(item.spiceLevels || [])];
+        while (next.length < q) next.push('0');
+        if (index >= 0 && index < q) next[index] = code;
+        return { ...item, spiceLevels: next };
+      }),
+    );
   };
 
   const handleConfirmOrder = () => {
@@ -103,11 +184,11 @@ const OrderPage = () => {
       },
       pickupRequestedInMinutes: Number(formData.pickupRequestedInMinutes),
       additionalInfo: formData.additionalInfo,
-      items: items.map(item => ({
+      items: items.map((item) => ({
         id: item.id,
-        label: item.label,
+        label: appendSpiceToLabel(item, isFr),
         price: item.price,
-        qty: item.qty
+        qty: item.qty,
       })),
       totalAmount: total,
     };
@@ -196,11 +277,37 @@ const OrderPage = () => {
               {items.map((item) => {
                 const isVariablePrice = item.id === 'dessert-of-the-day';
                 const lineTotal = (item.price || 0) * (item.qty || 0);
+                const needsSpice = itemNeedsSpice(item.id);
+                const spiceLevels = Array.isArray(item.spiceLevels) ? item.spiceLevels : [];
                 return (
                   <div key={item.id} className="order-item-row">
                     <div className="order-item-info">
                       <h4>{item.label}</h4>
                       <p>{isFr ? 'Spécialité Chapati' : 'Chapati Specialty'}</p>
+                      {needsSpice && (item.qty || 0) > 0 && (
+                        <div className="order-item-spice-block">
+                          <span className="order-item-spice-title">
+                            {isFr ? 'Niveau d’épices (par portion)' : 'Spice level (per portion)'}
+                          </span>
+                          {Array.from({ length: item.qty || 0 }, (_, i) => (
+                            <label key={i} className="order-item-spice-line">
+                              <span className="order-item-spice-unit">
+                                {isFr ? `Portion ${i + 1}` : `Unit ${i + 1}`}
+                              </span>
+                              <select
+                                className="order-item-spice-select"
+                                value={spiceLevels[i] ?? '0'}
+                                onChange={(e) => setSpiceAtIndex(item.id, i, e.target.value)}
+                              >
+                                <option value="0">{isFr ? 'Sans épice' : 'No spice'}</option>
+                                <option value="1">{isFr ? 'Une épice' : 'One spice'}</option>
+                                <option value="2">{isFr ? 'Deux épices' : 'Two spices'}</option>
+                                <option value="3">{isFr ? 'Trois épices' : 'Three spices'}</option>
+                              </select>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     
                     <div className="order-item-price">

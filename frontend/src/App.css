@@ -911,6 +911,49 @@ section {
   color: #888;
 }
 
+.order-item-spice-block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.order-item-spice-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-dark);
+}
+
+.order-item-spice-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.order-item-spice-unit {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.order-item-spice-select {
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+}
+
 .order-item-price {
   font-weight: 700;
   color: #333;

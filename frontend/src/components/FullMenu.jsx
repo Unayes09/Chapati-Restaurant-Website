@@ -1,6 +1,33 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLanguage } from '../LanguageContext';
 
+/** Curries, special curries, biryanis + Menu Sagorika (curry choice): spice level per portion on checkout */
+const MENU_IDS_NEED_SPICE = new Set([
+  'menu-sagorika',
+  'chicken-curry',
+  'lamb-curry',
+  'chicken-korma',
+  'lamb-korma',
+  'chicken-dhansak',
+  'lamb-dhansak',
+  'butter-chicken',
+  'chicken-tikka-masala',
+  'lamb-tikka-masala',
+  'chicken-jalfrezi',
+  'lamb-jalfrezi',
+  'chicken-balti',
+  'lamb-balti',
+  'chicken-biryani',
+  'lamb-biryani',
+  'vegetable-biryani',
+  'special-biryani',
+]);
+
+const itemNeedsSpice = (id) => MENU_IDS_NEED_SPICE.has(id);
+
+const isLambDishValue = (dishValue) =>
+  typeof dishValue === 'string' && dishValue.startsWith('lamb-');
+
 const FullMenu = () => {
   const { lang } = useLanguage();
   const isFr = lang === 'fr';
@@ -12,7 +39,6 @@ const FullMenu = () => {
   const [sagorikaStarter, setSagorikaStarter] = useState('onion-bhaji');
   const [sagorikaMain, setSagorikaMain] = useState('curry');
   const [sagorikaMainDish, setSagorikaMainDish] = useState('chicken-curry');
-  const [sagorikaIsLamb, setSagorikaIsLamb] = useState(false);
   const [sagorikaDessert, setSagorikaDessert] = useState('halwa');
   const [naan1495Choice, setNaan1495Choice] = useState('fried-naan');
   const [naan1595Choice, setNaan1595Choice] = useState('chapati-special');
@@ -119,7 +145,10 @@ const FullMenu = () => {
       if (next[id]) {
         delete next[id];
       } else {
-        next[id] = { id, label, price, qty: 1 };
+        const needs = itemNeedsSpice(id);
+        next[id] = needs
+          ? { id, label, price, qty: 1, spiceLevels: ['0'] }
+          : { id, label, price, qty: 1 };
       }
       return next;
     });
@@ -128,8 +157,25 @@ const FullMenu = () => {
   const upsertItem = (id, label, price) => {
     setCart((prev) => {
       const existing = prev[id];
-      if (existing && existing.label === label && existing.price === price) return prev;
-      return { ...prev, [id]: { id, label, price, qty: 1 } };
+      const needs = itemNeedsSpice(id);
+      const nextQty = existing?.qty ?? 1;
+      let spiceLevels;
+      if (needs) {
+        const prevSpice = existing?.spiceLevels;
+        if (Array.isArray(prevSpice) && prevSpice.length === nextQty) {
+          spiceLevels = prevSpice;
+        } else {
+          spiceLevels = Array(nextQty).fill('0');
+        }
+      }
+      if (existing && existing.label === label && existing.price === price) {
+        if (!needs) return prev;
+        if (JSON.stringify(existing.spiceLevels) === JSON.stringify(spiceLevels)) return prev;
+      }
+      const entry = needs
+        ? { id, label, price, qty: nextQty, spiceLevels }
+        : { id, label, price, qty: nextQty };
+      return { ...prev, [id]: entry };
     });
   };
 
@@ -183,11 +229,8 @@ const FullMenu = () => {
     [],
   );
 
-  const getSagorikaMainDishOptions = (mainValue, isLambValue) => {
-    const base = mainValue === 'special-curry' ? sagorikaSpecialCurries : sagorikaCurries;
-    if (isLambValue) return base;
-    return base.filter((opt) => !opt.value.startsWith('lamb-'));
-  };
+  const getSagorikaMainDishOptions = (mainValue) =>
+    mainValue === 'special-curry' ? sagorikaSpecialCurries : sagorikaCurries;
 
   const sagorikaDessertOptions = useMemo(
     () => [
@@ -200,22 +243,24 @@ const FullMenu = () => {
     [],
   );
 
-  const buildSagorikaLabel = (starterValue, mainValue, mainDishValue, isLambValue, dessertValue) => {
+  const buildSagorikaLabel = (starterValue, mainValue, mainDishValue, dessertValue) => {
     const starterLabel = sagorikaStarterOptions.find((o) => o.value === starterValue)?.[isFr ? 'fr' : 'en'] || '';
     const mainLabel = sagorikaMainOptions.find((o) => o.value === mainValue)?.[isFr ? 'fr' : 'en'] || '';
-    const mainDishOptions = getSagorikaMainDishOptions(mainValue, isLambValue);
+    const mainDishOptions = getSagorikaMainDishOptions(mainValue);
     const mainDishLabel = mainDishOptions.find((o) => o.value === mainDishValue)?.[isFr ? 'fr' : 'en'] || '';
     const dessertLabel = sagorikaDessertOptions.find((o) => o.value === dessertValue)?.[isFr ? 'fr' : 'en'] || '';
-    const optionPart = isLambValue ? `, ${isFr ? 'Option: Agneau +2€' : 'Option: Lamb +€2'}` : '';
+    const lambExtra = isLambDishValue(mainDishValue)
+      ? (isFr ? ', supplément agneau +2 €' : ', lamb +€2')
+      : '';
     return isFr
-      ? `Menu Sagorika (Entrée: ${starterLabel}, Plat: ${mainLabel} – ${mainDishLabel}${optionPart}, Dessert: ${dessertLabel})`
-      : `Menu Sagorika (Starter: ${starterLabel}, Main: ${mainLabel} – ${mainDishLabel}${optionPart}, Dessert: ${dessertLabel})`;
+      ? `Menu Sagorika (Entrée: ${starterLabel}, Plat: ${mainLabel} – ${mainDishLabel}${lambExtra}, Dessert: ${dessertLabel})`
+      : `Menu Sagorika (Starter: ${starterLabel}, Main: ${mainLabel} – ${mainDishLabel}${lambExtra}, Dessert: ${dessertLabel})`;
   };
 
-  const getSagorikaPrice = (isLambValue) => 24.9 + (isLambValue ? 2 : 0);
+  const getSagorikaPrice = (mainDishValue) => 24.9 + (isLambDishValue(mainDishValue) ? 2 : 0);
 
-  const sagorikaLabel = buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaIsLamb, sagorikaDessert);
-  const sagorikaPrice = getSagorikaPrice(sagorikaIsLamb);
+  const sagorikaLabel = buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaDessert);
+  const sagorikaPrice = getSagorikaPrice(sagorikaMainDish);
 
   const naan1495Options = useMemo(
     () => [
@@ -314,7 +359,9 @@ const FullMenu = () => {
             <div className={`full-menu-section full-menu-highlight ${coveredSections.has('menu-sagorika') ? 'is-covered' : ''}`} id="menu-sagorika">
               <div className="full-menu-item-header">
                 <span className="full-menu-section-title">
-                  {isFr ? 'MENU SAGORIKA – 24,90 €' : 'MENU SAGORIKA – €24.90'}
+                  {isFr
+                    ? `MENU SAGORIKA – ${sagorikaPrice.toFixed(2).replace('.', ',')} €`
+                    : `MENU SAGORIKA – €${sagorikaPrice.toFixed(2)}`}
                 </span>
               </div>
               <p className="full-menu-note">
@@ -333,8 +380,8 @@ const FullMenu = () => {
                       if (cart['menu-sagorika']) {
                         upsertItem(
                           'menu-sagorika',
-                          buildSagorikaLabel(nextValue, sagorikaMain, sagorikaMainDish, sagorikaIsLamb, sagorikaDessert),
-                          getSagorikaPrice(sagorikaIsLamb),
+                          buildSagorikaLabel(nextValue, sagorikaMain, sagorikaMainDish, sagorikaDessert),
+                          getSagorikaPrice(sagorikaMainDish),
                         );
                       }
                     }}
@@ -355,14 +402,16 @@ const FullMenu = () => {
                     onChange={(e) => {
                       const nextValue = e.target.value;
                       setSagorikaMain(nextValue);
-                      const nextOptions = getSagorikaMainDishOptions(nextValue, sagorikaIsLamb);
-                      const nextDish = nextOptions[0]?.value || '';
+                      const nextOptions = getSagorikaMainDishOptions(nextValue);
+                      const nextDish = nextOptions.some((o) => o.value === sagorikaMainDish)
+                        ? sagorikaMainDish
+                        : (nextOptions[0]?.value || '');
                       setSagorikaMainDish(nextDish);
                       if (cart['menu-sagorika']) {
                         upsertItem(
                           'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, nextValue, nextDish, sagorikaIsLamb, sagorikaDessert),
-                          getSagorikaPrice(sagorikaIsLamb),
+                          buildSagorikaLabel(sagorikaStarter, nextValue, nextDish, sagorikaDessert),
+                          getSagorikaPrice(nextDish),
                         );
                       }
                     }}
@@ -374,30 +423,6 @@ const FullMenu = () => {
                     ))}
                   </select>
                 </div>
-
-                <label className="full-menu-bundle-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={sagorikaIsLamb}
-                    onChange={(e) => {
-                      const nextValue = e.target.checked;
-                      setSagorikaIsLamb(nextValue);
-                      const nextOptions = getSagorikaMainDishOptions(sagorikaMain, nextValue);
-                      const nextDish = nextOptions.some((o) => o.value === sagorikaMainDish)
-                        ? sagorikaMainDish
-                        : (nextOptions[0]?.value || '');
-                      setSagorikaMainDish(nextDish);
-                      if (cart['menu-sagorika']) {
-                        upsertItem(
-                          'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, nextDish, nextValue, sagorikaDessert),
-                          getSagorikaPrice(nextValue),
-                        );
-                      }
-                    }}
-                  />
-                  <span>{isFr ? 'Option agneau (+2€)' : 'Lamb option (+€2)'}</span>
-                </label>
 
                 <div className="full-menu-bundle-row">
                   <span className="full-menu-bundle-label">
@@ -414,19 +439,32 @@ const FullMenu = () => {
                       if (cart['menu-sagorika']) {
                         upsertItem(
                           'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, nextValue, sagorikaIsLamb, sagorikaDessert),
-                          getSagorikaPrice(sagorikaIsLamb),
+                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, nextValue, sagorikaDessert),
+                          getSagorikaPrice(nextValue),
                         );
                       }
                     }}
                   >
-                    {getSagorikaMainDishOptions(sagorikaMain, sagorikaIsLamb).map((opt) => (
+                    {getSagorikaMainDishOptions(sagorikaMain).map((opt) => (
                       <option key={opt.value} value={opt.value}>
                         {isFr ? opt.fr : opt.en}
                       </option>
                     ))}
                   </select>
                 </div>
+
+                {(sagorikaMain === 'curry' || sagorikaMain === 'special-curry') && (
+                  <p className="full-menu-note" style={{ marginTop: 0, marginBottom: 4 }}>
+                    {isFr
+                      ? 'Tous les currys sont servis avec du riz basmati.'
+                      : 'All curries are served with basmati rice.'}
+                  </p>
+                )}
+                {isLambDishValue(sagorikaMainDish) && (
+                  <p className="full-menu-note" style={{ marginTop: 0, marginBottom: 8, fontWeight: 700 }}>
+                    {isFr ? '+2 € inclus pour le plat à l’agneau.' : '+€2 included for lamb dishes.'}
+                  </p>
+                )}
 
                 <div className="full-menu-bundle-row">
                   <span className="full-menu-bundle-label">{isFr ? 'Dessert *' : 'Dessert *'}</span>
@@ -439,8 +477,8 @@ const FullMenu = () => {
                       if (cart['menu-sagorika']) {
                         upsertItem(
                           'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaIsLamb, nextValue),
-                          getSagorikaPrice(sagorikaIsLamb),
+                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, nextValue),
+                          getSagorikaPrice(sagorikaMainDish),
                         );
                       }
                     }}
