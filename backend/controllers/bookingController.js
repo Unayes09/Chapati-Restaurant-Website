@@ -117,7 +117,7 @@ const createBooking = async (req, res) => {
         ? `Chapati 35: New Pickup Order (${booking.orderCode})`
         : `Chapati 35: New Reservation (${booking.orderCode})`;
       const ownerText = isPickupOrder
-        ? `New pickup order from ${customer.name} (${customer.email}). Requested pickup: ${pickupRequestedInMinutes} minutes. Total: €${Number(totalAmount || 0).toFixed(2)}. Order code: ${booking.orderCode}.`
+        ? `New pickup order from ${customer.name} (${customer.email}). Requested pickup: ${pickupRequestedInMinutes} minutes. Items: ${safeItems.map((item) => `${item.qty}x ${item.label}${item.price ? ` (€${Number(item.price).toFixed(2)})` : ''}`).join(', ') || 'No items'}. Total: €${Number(totalAmount || 0).toFixed(2)}. Order code: ${booking.orderCode}.`
         : `New reservation from ${customer.name} (${customer.email}) for ${bookingDate} at ${bookingTime}. Table size: ${table?.size || '-'}. Booking code: ${booking.orderCode}.`;
       const ownerHtml = isPickupOrder
         ? `
@@ -126,6 +126,17 @@ const createBooking = async (req, res) => {
           <p><strong>Email:</strong> ${customer.email}</p>
           <p><strong>Phone:</strong> ${customer.phone || '-'}</p>
           <p><strong>Requested pickup:</strong> ${pickupRequestedInMinutes} minutes</p>
+          <p><strong>Ordered Items:</strong></p>
+          <ul>
+            ${safeItems
+              .map(
+                (item) =>
+                  `<li>${item.qty}x ${item.label} ${
+                    item.price ? `(€${Number(item.price).toFixed(2)})` : ''
+                  }</li>`,
+              )
+              .join('')}
+          </ul>
           <p><strong>Total Amount:</strong> €${Number(totalAmount || 0).toFixed(2)}</p>
           <p><strong>Order Code:</strong> ${booking.orderCode}</p>
         `
