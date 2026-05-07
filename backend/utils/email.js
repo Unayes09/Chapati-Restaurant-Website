@@ -5,6 +5,10 @@ const dns = require('dns');
 // Force IPv4 lookup order first to avoid ENETUNREACH on IPv6-only resolution.
 dns.setDefaultResultOrder('ipv4first');
 
+const ipv4Lookup = (hostname, options, callback) => {
+  dns.lookup(hostname, { ...options, family: 4, all: false }, callback);
+};
+
 /**
  * Send mail via SMTP (default: Gmail).
  *
@@ -41,6 +45,7 @@ const sendEmail = async (to, subject, text, html) => {
       secure,
       ...(port === 587 ? { requireTLS: true } : {}),
       auth: { user, pass },
+      lookup: ipv4Lookup,
       connectionTimeout: 20000,
       greetingTimeout: 15000,
       socketTimeout: 30000,

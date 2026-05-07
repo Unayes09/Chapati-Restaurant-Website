@@ -23,7 +23,8 @@ const MENU_IDS_NEED_SPICE = new Set([
   'special-biryani',
 ]);
 
-const itemNeedsSpice = (id) => MENU_IDS_NEED_SPICE.has(id);
+const itemNeedsSpice = (id) =>
+  MENU_IDS_NEED_SPICE.has(id) || (typeof id === 'string' && id.startsWith('menu-sagorika__'));
 
 const isLambDishValue = (dishValue) =>
   typeof dishValue === 'string' && dishValue.startsWith('lamb-');
@@ -261,6 +262,10 @@ const FullMenu = () => {
 
   const sagorikaLabel = buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaDessert);
   const sagorikaPrice = getSagorikaPrice(sagorikaMainDish);
+  const sagorikaCartId = useMemo(
+    () => `menu-sagorika__${sagorikaStarter}__${sagorikaMain}__${sagorikaMainDish}__${sagorikaDessert}`,
+    [sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaDessert],
+  );
 
   const naan1495Options = useMemo(
     () => [
@@ -291,6 +296,8 @@ const FullMenu = () => {
       ? `Menu Naan Sandwich (15,95€) – ${choiceLabel}`
       : `Naan Sandwich Menu (€15.95) – ${choiceLabel}`;
   }, [isFr, naan1595Choice, naan1595Options]);
+  const naan1495CartId = useMemo(() => `menu-naan-1495__${naan1495Choice}`, [naan1495Choice]);
+  const naan1595CartId = useMemo(() => `menu-naan-1595__${naan1595Choice}`, [naan1595Choice]);
 
   const totalItems = useMemo(
     () =>
@@ -377,13 +384,6 @@ const FullMenu = () => {
                     onChange={(e) => {
                       const nextValue = e.target.value;
                       setSagorikaStarter(nextValue);
-                      if (cart['menu-sagorika']) {
-                        upsertItem(
-                          'menu-sagorika',
-                          buildSagorikaLabel(nextValue, sagorikaMain, sagorikaMainDish, sagorikaDessert),
-                          getSagorikaPrice(sagorikaMainDish),
-                        );
-                      }
                     }}
                   >
                     {sagorikaStarterOptions.map((opt) => (
@@ -407,13 +407,6 @@ const FullMenu = () => {
                         ? sagorikaMainDish
                         : (nextOptions[0]?.value || '');
                       setSagorikaMainDish(nextDish);
-                      if (cart['menu-sagorika']) {
-                        upsertItem(
-                          'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, nextValue, nextDish, sagorikaDessert),
-                          getSagorikaPrice(nextDish),
-                        );
-                      }
                     }}
                   >
                     {sagorikaMainOptions.map((opt) => (
@@ -436,13 +429,6 @@ const FullMenu = () => {
                     onChange={(e) => {
                       const nextValue = e.target.value;
                       setSagorikaMainDish(nextValue);
-                      if (cart['menu-sagorika']) {
-                        upsertItem(
-                          'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, nextValue, sagorikaDessert),
-                          getSagorikaPrice(nextValue),
-                        );
-                      }
                     }}
                   >
                     {getSagorikaMainDishOptions(sagorikaMain).map((opt) => (
@@ -474,13 +460,6 @@ const FullMenu = () => {
                     onChange={(e) => {
                       const nextValue = e.target.value;
                       setSagorikaDessert(nextValue);
-                      if (cart['menu-sagorika']) {
-                        upsertItem(
-                          'menu-sagorika',
-                          buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, nextValue),
-                          getSagorikaPrice(sagorikaMainDish),
-                        );
-                      }
                     }}
                   >
                     {sagorikaDessertOptions.map((opt) => (
@@ -492,11 +471,11 @@ const FullMenu = () => {
                 </div>
 
                 <div className="full-menu-bundle-actions">
-                  {cart['menu-sagorika'] ? (
+                  {cart[sagorikaCartId] ? (
                     <button
                       type="button"
                       className="full-menu-bundle-btn is-selected"
-                      onClick={() => removeItem('menu-sagorika')}
+                      onClick={() => removeItem(sagorikaCartId)}
                     >
                       {isFr ? 'Retirer du panier' : 'Remove from cart'}
                     </button>
@@ -504,7 +483,7 @@ const FullMenu = () => {
                     <button
                       type="button"
                       className="full-menu-bundle-btn"
-                      onClick={() => upsertItem('menu-sagorika', sagorikaLabel, sagorikaPrice)}
+                      onClick={() => upsertItem(sagorikaCartId, sagorikaLabel, sagorikaPrice)}
                     >
                       {isFr ? `Ajouter au panier – ${sagorikaPrice.toFixed(2).replace('.', ',')} €` : `Add to cart – €${sagorikaPrice.toFixed(2)}`}
                     </button>
@@ -543,24 +522,17 @@ const FullMenu = () => {
                             onChange={(e) => {
                               const nextValue = e.target.value;
                               setNaan1495Choice(nextValue);
-                              if (cart['menu-naan-1495']) {
-                                const choiceLabel = naan1495Options.find((o) => o.value === nextValue)?.[isFr ? 'fr' : 'en'] || '';
-                                const nextLabel = isFr
-                                  ? `Menu Naan Sandwich (14,95€) – ${choiceLabel}`
-                                  : `Naan Sandwich Menu (€14.95) – ${choiceLabel}`;
-                                upsertItem('menu-naan-1495', nextLabel, 14.95);
-                              }
                             }}
                           />
                           <span>{isFr ? opt.fr : opt.en}</span>
                         </label>
                       ))}
                     </div>
-                    {cart['menu-naan-1495'] ? (
+                    {cart[naan1495CartId] ? (
                       <button
                         type="button"
                         className="full-menu-bundle-btn is-selected"
-                        onClick={() => removeItem('menu-naan-1495')}
+                        onClick={() => removeItem(naan1495CartId)}
                       >
                         {isFr ? 'Retirer' : 'Remove'}
                       </button>
@@ -568,7 +540,7 @@ const FullMenu = () => {
                       <button
                         type="button"
                         className="full-menu-bundle-btn"
-                        onClick={() => upsertItem('menu-naan-1495', naan1495Label, 14.95)}
+                        onClick={() => upsertItem(naan1495CartId, naan1495Label, 14.95)}
                       >
                         {isFr ? 'Ajouter' : 'Add'}
                       </button>
@@ -590,24 +562,17 @@ const FullMenu = () => {
                             onChange={(e) => {
                               const nextValue = e.target.value;
                               setNaan1595Choice(nextValue);
-                              if (cart['menu-naan-1595']) {
-                                const choiceLabel = naan1595Options.find((o) => o.value === nextValue)?.[isFr ? 'fr' : 'en'] || '';
-                                const nextLabel = isFr
-                                  ? `Menu Naan Sandwich (15,95€) – ${choiceLabel}`
-                                  : `Naan Sandwich Menu (€15.95) – ${choiceLabel}`;
-                                upsertItem('menu-naan-1595', nextLabel, 15.95);
-                              }
                             }}
                           />
                           <span>{isFr ? opt.fr : opt.en}</span>
                         </label>
                       ))}
                     </div>
-                    {cart['menu-naan-1595'] ? (
+                    {cart[naan1595CartId] ? (
                       <button
                         type="button"
                         className="full-menu-bundle-btn is-selected"
-                        onClick={() => removeItem('menu-naan-1595')}
+                        onClick={() => removeItem(naan1595CartId)}
                       >
                         {isFr ? 'Retirer' : 'Remove'}
                       </button>
@@ -615,7 +580,7 @@ const FullMenu = () => {
                       <button
                         type="button"
                         className="full-menu-bundle-btn"
-                        onClick={() => upsertItem('menu-naan-1595', naan1595Label, 15.95)}
+                        onClick={() => upsertItem(naan1595CartId, naan1595Label, 15.95)}
                       >
                         {isFr ? 'Ajouter' : 'Add'}
                       </button>
