@@ -111,6 +111,42 @@ const createBooking = async (req, res) => {
       })
       .catch((err) => console.error('[booking] createBooking email error:', err));
 
+    const ownerEmail = process.env.OWNER_EMAIL;
+    if (ownerEmail) {
+      const ownerSubject = isPickupOrder
+        ? `Chapati 35: New Pickup Order (${booking.orderCode})`
+        : `Chapati 35: New Reservation (${booking.orderCode})`;
+      const ownerText = isPickupOrder
+        ? `New pickup order from ${customer.name} (${customer.email}). Requested pickup: ${pickupRequestedInMinutes} minutes. Total: €${Number(totalAmount || 0).toFixed(2)}. Order code: ${booking.orderCode}.`
+        : `New reservation from ${customer.name} (${customer.email}) for ${bookingDate} at ${bookingTime}. Table size: ${table?.size || '-'}. Booking code: ${booking.orderCode}.`;
+      const ownerHtml = isPickupOrder
+        ? `
+          <h3>New Pickup Order</h3>
+          <p><strong>Customer:</strong> ${customer.name}</p>
+          <p><strong>Email:</strong> ${customer.email}</p>
+          <p><strong>Phone:</strong> ${customer.phone || '-'}</p>
+          <p><strong>Requested pickup:</strong> ${pickupRequestedInMinutes} minutes</p>
+          <p><strong>Total Amount:</strong> €${Number(totalAmount || 0).toFixed(2)}</p>
+          <p><strong>Order Code:</strong> ${booking.orderCode}</p>
+        `
+        : `
+          <h3>New Reservation</h3>
+          <p><strong>Customer:</strong> ${customer.name}</p>
+          <p><strong>Email:</strong> ${customer.email}</p>
+          <p><strong>Phone:</strong> ${customer.phone || '-'}</p>
+          <p><strong>Date:</strong> ${bookingDate}</p>
+          <p><strong>Time:</strong> ${bookingTime}</p>
+          <p><strong>Table size:</strong> ${table?.size || '-'}</p>
+          <p><strong>Booking Code:</strong> ${booking.orderCode}</p>
+        `;
+
+      sendEmail(ownerEmail, ownerSubject, ownerText, ownerHtml)
+        .then((ownerMailResult) => {
+          if (!ownerMailResult.ok) console.error('[booking] createBooking owner email failed:', ownerMailResult.error);
+        })
+        .catch((err) => console.error('[booking] createBooking owner email error:', err));
+    }
+
     res.status(201).send(booking);
   } catch (error) {
     res.status(400).send({ error: error.message });
