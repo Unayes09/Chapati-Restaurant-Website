@@ -1,4 +1,9 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Some cloud runtimes prefer unreachable IPv6 routes for smtp.gmail.com.
+// Force IPv4 lookup order first to avoid ENETUNREACH on IPv6-only resolution.
+dns.setDefaultResultOrder('ipv4first');
 
 /**
  * Send mail via SMTP (default: Gmail).
@@ -36,6 +41,9 @@ const sendEmail = async (to, subject, text, html) => {
       secure,
       ...(port === 587 ? { requireTLS: true } : {}),
       auth: { user, pass },
+      connectionTimeout: 20000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
     });
 
     const fromAddr = process.env.EMAIL_FROM || user;
