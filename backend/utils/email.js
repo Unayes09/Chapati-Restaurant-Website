@@ -1,73 +1,115 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns');
-
-// Some cloud runtimes prefer unreachable IPv6 routes for smtp.gmail.com.
-// Force IPv4 lookup order first to avoid ENETUNREACH on IPv6-only resolution.
-dns.setDefaultResultOrder('ipv4first');
-
-const ipv4Lookup = (hostname, options, callback) => {
-  dns.lookup(hostname, { ...options, family: 4, all: false }, callback);
-};
+const { Resend } = require('resend');
 
 /**
- * Send mail via SMTP (default: Gmail).
+ * Unified email sender. Switch provider via EMAIL_PROVIDER env var.
  *
- * Render / production checklist:
- * - Set EMAIL_USER and EMAIL_PASS in the Render service "Environment" tab (not only .env on your PC).
- * - Gmail: use an App Password (Google Account → Security → 2-Step Verification → App passwords),
- *   not your normal password. "Less secure apps" no longer works.
- * - If Gmail still blocks the datacenter, check the sender Google account for security alerts, or use
- *   a provider API (Resend, SendGrid, Mailgun) instead of smtp.gmail.com.
+ * ─── Resend (default) ────────────────────────────────────────────────────────
+ *   EMAIL_PROVIDER=resend   (or leave unset)
+ *   RESEND_API_KEY=re_xxxxxxxxxxxx
+ *   FROM_EMAIL=noreply@yourdomain.com   (must be verified in Resend dashboard)
  *
- * Optional env: SMTP_HOST (default smtp.gmail.com), SMTP_PORT (default 587), EMAIL_FROM (defaults to EMAIL_USER).
+ * ─── AWS SES (future) ────────────────────────────────────────────────────────
+ *   EMAIL_PROVIDER=ses
+ *   AWS_REGION=eu-west-3
+ *   AWS_ACCESS_KEY_ID=AKIAxxxxxxxxxx
+ *   AWS_SECRET_ACCESS_KEY=xxxxxxxx
+ *   FROM_EMAIL=noreply@yourdomain.com   (must be verified in SES)
+ *
+ * The function signature never changes — only env vars differ between providers.
  *
  * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
  */
 const sendEmail = async (to, subject, text, html) => {
-  const user = process.env.EMAIL_USER;
-  const pass = process.env.EMAIL_PASS;
+  const provider = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 
-  if (!user || !pass) {
-    const msg =
-      'EMAIL_USER or EMAIL_PASS is missing. Add both in Render → your Web Service → Environment.';
+  if (provider === 'resend') {
+    return sendViaResend(to, subject, text, html);
+  }
+
+  if (provider === 'ses') {
+    return sendViaSes(to, subject, text, html);
+  }
+
+  const msg = `Unknown EMAIL_PROVIDER "${provider}". Use "resend" or "ses".`;
+  console.error('[email]', msg);
+  return { ok: false, error: msg };
+};
+
+// ─── Resend ──────────────────────────────────────────────────────────────────
+
+const sendViaResend = async (to, subject, text, html) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.FROM_EMAIL;
+
+  if (!apiKey || !from) {
+    const msg = 'RESEND_API_KEY or FROM_EMAIL is missing. Add both in Render → Environment.';
     console.error('[email]', msg);
     return { ok: false, error: msg };
   }
 
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT || 587);
-  const secure = port === 465;
-
   try {
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      ...(port === 587 ? { requireTLS: true } : {}),
-      auth: { user, pass },
-      lookup: ipv4Lookup,
-      connectionTimeout: 20000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-    });
-
-    const fromAddr = process.env.EMAIL_FROM || user;
-
-    await transporter.sendMail({
-      from: `"Chapati 35" <${fromAddr}>`,
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: `Chapati 35 <${from}>`,
       to,
       subject,
       text,
       html,
     });
 
-    console.log(`[email] sent to ${to} (subject: ${subject})`);
+    if (error) {
+      console.error('[email] Resend error:', error.message || JSON.stringify(error));
+      return { ok: false, error: error.message || JSON.stringify(error) };
+    }
+
+    console.log(`[email] sent via Resend to ${to} (subject: ${subject})`);
     return { ok: true };
-  } catch (error) {
-    const message = error?.message || String(error);
-    const code = error?.code || error?.responseCode;
-    console.error('[email] send failed:', message, code ? `(code ${code})` : '', error?.response || '');
-    return { ok: false, error: message };
+  } catch (err) {
+    const msg = err?.message || String(err);
+    console.error('[email] Resend exception:', msg);
+    return { ok: false, error: msg };
+  }
+};
+
+// ─── AWS SES (ready to enable — install @aws-sdk/client-sesv2 first) ─────────
+// npm install @aws-sdk/client-sesv2
+
+const sendViaSes = async (to, subject, text, html) => {
+  const region = process.env.AWS_REGION;
+  const from = process.env.FROM_EMAIL;
+
+  if (!region || !from) {
+    const msg = 'AWS_REGION or FROM_EMAIL is missing for SES.';
+    console.error('[email]', msg);
+    return { ok: false, error: msg };
+  }
+
+  try {
+    const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
+    const client = new SESv2Client({ region });
+
+    await client.send(
+      new SendEmailCommand({
+        FromEmailAddress: `Chapati 35 <${from}>`,
+        Destination: { ToAddresses: [to] },
+        Content: {
+          Simple: {
+            Subject: { Data: subject },
+            Body: {
+              Text: { Data: text },
+              Html: { Data: html },
+            },
+          },
+        },
+      }),
+    );
+
+    console.log(`[email] sent via SES to ${to} (subject: ${subject})`);
+    return { ok: true };
+  } catch (err) {
+    const msg = err?.message || String(err);
+    console.error('[email] SES error:', msg);
+    return { ok: false, error: msg };
   }
 };
 
