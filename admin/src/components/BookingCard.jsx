@@ -1,6 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { useAdminLanguage } from '../AdminLanguageContext.jsx';
 
+const escapeHtml = (value) => {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+
 const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
   const { t } = useAdminLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -59,7 +68,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
     const itemRows = receiptItems
       .map((item) => {
         const qty = Number(item?.qty) || 0;
-        const label = item?.label || '-';
+        const label = escapeHtml(item?.label || '-');
         const lineTotal = (Number(item?.price) || 0) * qty;
         return `
           <tr>
@@ -83,35 +92,36 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
         })
       : '-';
 
-    const printWindow = window.open('', '_blank', 'width=360,height=700');
-    if (!printWindow) return;
-
     const receiptHtml = `
       <!doctype html>
       <html>
         <head>
           <meta charset="utf-8" />
-          <title>Receipt ${orderCode || _id}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Receipt ${escapeHtml(orderCode || _id)}</title>
           <style>
-            @page { size: 80mm auto; margin: 4mm; }
+            @page { size: 80mm auto; margin: 2mm; }
+            @media print {
+              html, body { width: 72mm; max-width: 72mm; }
+            }
             * { box-sizing: border-box; }
             html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; }
-            body { width: 80mm; max-width: 320px; padding: 4mm; }
+            body { width: 72mm; max-width: 72mm; padding: 2mm; font-size: 12px; }
             .top { text-align: center; margin-bottom: 8px; }
-            .brand { font-size: 18px; font-weight: 700; margin: 0; }
+            .brand { font-size: 16px; font-weight: 700; margin: 0; }
             .line { border-top: 1px dashed #111; margin: 8px 0; }
-            .meta p { margin: 2px 0; font-size: 12px; }
+            .meta p { margin: 2px 0; font-size: 11px; word-break: break-word; }
             .meta strong { font-weight: 700; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-            th, td { font-size: 12px; padding: 3px 0; vertical-align: top; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
+            th, td { font-size: 11px; padding: 3px 0; vertical-align: top; }
             th { text-align: left; border-bottom: 1px solid #111; }
-            .qty { width: 30px; }
-            .name { width: auto; padding-right: 6px; }
-            .price { width: 70px; text-align: right; white-space: nowrap; }
+            .qty { width: 28px; }
+            .name { word-break: break-word; overflow-wrap: anywhere; white-space: normal; padding-right: 4px; }
+            .price { width: 58px; text-align: right; white-space: nowrap; }
             .sum { margin-top: 10px; }
-            .sum-row { display: flex; justify-content: space-between; font-size: 13px; margin: 3px 0; }
-            .sum-row.total { font-size: 16px; font-weight: 700; margin-top: 6px; }
-            .foot { text-align: center; margin-top: 12px; font-size: 11px; }
+            .sum-row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; gap: 8px; }
+            .sum-row.total { font-size: 14px; font-weight: 700; margin-top: 6px; }
+            .foot { text-align: center; margin-top: 12px; font-size: 10px; }
           </style>
         </head>
         <body>
@@ -119,10 +129,10 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
             <p class="brand">Chapati Delivery</p>
           </div>
           <div class="meta">
-            <p><strong>Name:</strong> ${customer?.name || '-'}</p>
-            <p><strong>Code:</strong> ${orderCode || _id}</p>
-            <p><strong>Phone:</strong> ${customer?.phone || '-'}</p>
-            <p><strong>Placed:</strong> ${orderCreatedAt}</p>
+            <p><strong>Name:</strong> ${escapeHtml(customer?.name || '-')}</p>
+            <p><strong>Code:</strong> ${escapeHtml(orderCode || _id)}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(customer?.phone || '-')}</p>
+            <p><strong>Placed:</strong> ${escapeHtml(orderCreatedAt)}</p>
           </div>
           <div class="line"></div>
           <table>
@@ -146,21 +156,48 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
           </div>
           <div class="line"></div>
           <p class="foot">Thank you - Chapati Delivery</p>
-          <script>
-            window.onload = () => {
-              window.print();
-            };
-            window.onafterprint = () => {
-              window.close();
-            };
-          </script>
         </body>
       </html>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(receiptHtml);
-    printWindow.document.close();
+    const runPrint = (targetWindow) => {
+      const trigger = () => {
+        try {
+          targetWindow.focus();
+          targetWindow.print();
+        } catch {
+          window.alert(t('bookingCard.printFailed'));
+        }
+      };
+      setTimeout(trigger, 350);
+    };
+
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('title', t('bookingCard.printReceipt'));
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:0;height:0;border:0;';
+    document.body.appendChild(iframe);
+
+    const iframeWin = iframe.contentWindow;
+    if (!iframeWin) {
+      document.body.removeChild(iframe);
+      window.alert(t('bookingCard.printFailed'));
+      return;
+    }
+
+    const cleanup = () => {
+      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    };
+
+    iframeWin.document.open();
+    iframeWin.document.write(receiptHtml);
+    iframeWin.document.close();
+
+    iframe.onload = () => runPrint(iframeWin);
+    runPrint(iframeWin);
+
+    iframeWin.onafterprint = cleanup;
+    setTimeout(cleanup, 120_000);
   };
 
   return (

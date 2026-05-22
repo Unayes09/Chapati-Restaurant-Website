@@ -126,6 +126,7 @@ const en = {
     reject: 'Reject',
     collected: 'Collected',
     printReceipt: 'Print',
+    printFailed: 'Could not open the print dialog. Allow pop-ups or try again from the browser menu.',
   },
   analytics: {
     title: 'Analytics',
@@ -358,6 +359,7 @@ const fr = {
     reject: 'Refuser',
     collected: 'Récupéré',
     printReceipt: 'Imprimer',
+    printFailed: "Impossible d'ouvrir l'impression. Autorisez les fenêtres pop-up ou réessayez via le menu du navigateur.",
   },
   analytics: {
     title: 'Analytique',
