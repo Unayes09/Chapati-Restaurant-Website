@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { useAdminLanguage } from './AdminLanguageContext.jsx';
+import { formatItemLabelForDisplay } from './utils/spiceLevels.js';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/AdminSidebar';
 import BookingCard from './components/BookingCard';
@@ -20,7 +21,8 @@ const ORDER_ALERT_CYCLE_MS = ORDER_ALERT_BEEP_S * 1000 + ORDER_ALERT_GAP_MS;
 const NEW_ORDER_ALERT_TIMEOUT_MS = 60_000;
 
 function App() {
-  const { t } = useAdminLanguage();
+  const { t, lang } = useAdminLanguage();
+  const isFr = lang === 'fr';
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('adminToken') || '');
   const [activeTab, setActiveTab] = useState('orders');
@@ -698,7 +700,7 @@ function App() {
                             return (
                               <li key={it.id || `${it.label}-${qty}`}>
                                 <span>
-                                  {qty}× {it.label}
+                                  {qty}× {formatItemLabelForDisplay(it.label, isFr)}
                                 </span>
                                 <span>{line > 0 ? `€${line.toFixed(2)}` : ''}</span>
                               </li>

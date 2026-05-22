@@ -1,30 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLanguage } from '../LanguageContext';
-
-/** Curries, special curries, biryanis + Menu Sagorika (curry choice): spice level per portion on checkout */
-const MENU_IDS_NEED_SPICE = new Set([
-  'menu-sagorika',
-  'chicken-curry',
-  'lamb-curry',
-  'chicken-korma',
-  'lamb-korma',
-  'chicken-dhansak',
-  'lamb-dhansak',
-  'butter-chicken',
-  'chicken-tikka-masala',
-  'lamb-tikka-masala',
-  'chicken-jalfrezi',
-  'lamb-jalfrezi',
-  'chicken-balti',
-  'lamb-balti',
-  'chicken-biryani',
-  'lamb-biryani',
-  'vegetable-biryani',
-  'special-biryani',
-]);
-
-const itemNeedsSpice = (id) =>
-  MENU_IDS_NEED_SPICE.has(id) || (typeof id === 'string' && id.startsWith('menu-sagorika__'));
+import { itemNeedsSpice } from '../utils/spiceLevels.js';
 
 const isLambDishValue = (dishValue) =>
   typeof dishValue === 'string' && dishValue.startsWith('lamb-');

@@ -1,28 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
-
-const MENU_IDS_NEED_SPICE = new Set([
-  'menu-sagorika',
-  'chicken-curry',
-  'lamb-curry',
-  'chicken-korma',
-  'lamb-korma',
-  'chicken-dhansak',
-  'lamb-dhansak',
-  'butter-chicken',
-  'chicken-tikka-masala',
-  'lamb-tikka-masala',
-  'chicken-jalfrezi',
-  'lamb-jalfrezi',
-  'chicken-balti',
-  'lamb-balti',
-  'chicken-biryani',
-  'lamb-biryani',
-  'vegetable-biryani',
-  'special-biryani',
-]);
-
-const itemNeedsSpice = (id) => MENU_IDS_NEED_SPICE.has(id);
+import {
+  appendSpiceToLabel,
+  getSpiceLevelLabel,
+  itemNeedsSpice,
+  SPICE_LEVEL_OPTIONS,
+} from '../utils/spiceLevels.js';
 
 const normalizeSpiceLevels = (item) => {
   if (!itemNeedsSpice(item.id)) return item;
@@ -35,30 +18,6 @@ const normalizeSpiceLevels = (item) => {
 
 const normalizeOrderItems = (arr) =>
   Array.isArray(arr) ? arr.map((item) => normalizeSpiceLevels(item)) : [];
-
-const appendSpiceToLabel = (item, isFr) => {
-  if (!itemNeedsSpice(item.id)) return item.label;
-  const q = item.qty || 1;
-  const levels = [...(item.spiceLevels || [])];
-  while (levels.length < q) levels.push('0');
-  const slice = levels.slice(0, q);
-  const labelFor = (code) => {
-    switch (code) {
-      case '1':
-        return isFr ? 'une épice' : 'one spice';
-      case '2':
-        return isFr ? 'deux épices' : 'two spices';
-      case '3':
-        return isFr ? 'trois épices' : 'three spices';
-      default:
-        return isFr ? 'sans épice' : 'no spice';
-    }
-  };
-  const parts = slice.map((code, idx) =>
-    `${isFr ? 'Portion' : 'Unit'} ${idx + 1}: ${labelFor(code)}`,
-  );
-  return `${item.label} [${isFr ? 'Épices' : 'Spice'}: ${parts.join(isFr ? ' ; ' : '; ')}]`;
-};
 
 const pickupOptions = [
   { value: 15, label: '15 min' },
@@ -299,10 +258,11 @@ const OrderPage = () => {
                                 value={spiceLevels[i] ?? '0'}
                                 onChange={(e) => setSpiceAtIndex(item.id, i, e.target.value)}
                               >
-                                <option value="0">{isFr ? 'Sans épice' : 'No spice'}</option>
-                                <option value="1">{isFr ? 'Une épice' : 'One spice'}</option>
-                                <option value="2">{isFr ? 'Deux épices' : 'Two spices'}</option>
-                                <option value="3">{isFr ? 'Trois épices' : 'Three spices'}</option>
+                                {SPICE_LEVEL_OPTIONS.map((code) => (
+                                  <option key={code} value={code}>
+                                    {getSpiceLevelLabel(code, isFr)}
+                                  </option>
+                                ))}
                               </select>
                             </label>
                           ))}

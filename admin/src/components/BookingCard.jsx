@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useAdminLanguage } from '../AdminLanguageContext.jsx';
+import { formatItemLabelForDisplay } from '../utils/spiceLevels.js';
 
 const escapeHtml = (value) => {
   if (value == null) return '';
@@ -11,7 +12,8 @@ const escapeHtml = (value) => {
 };
 
 const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
-  const { t } = useAdminLanguage();
+  const { t, lang } = useAdminLanguage();
+  const isFr = lang === 'fr';
   const [expanded, setExpanded] = useState(false);
   const {
     customer,
@@ -68,7 +70,7 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
     const itemRows = receiptItems
       .map((item) => {
         const qty = Number(item?.qty) || 0;
-        const label = escapeHtml(item?.label || '-');
+        const label = escapeHtml(formatItemLabelForDisplay(item?.label, isFr) || '-');
         const lineTotal = (Number(item?.price) || 0) * qty;
         return `
           <tr>
@@ -320,7 +322,9 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
                   <div key={idx} className="booking-row-item">
                     <div className="booking-row-item-left">
                       <span className="booking-row-item-qty">{item.qty}x</span>
-                      <span className="booking-row-item-name">{item.label}</span>
+                      <span className="booking-row-item-name">
+                        {formatItemLabelForDisplay(item.label, isFr)}
+                      </span>
                     </div>
                     <div className="booking-row-item-right">
                       {item.price ? `€${(Number(item.price) * Number(item.qty)).toFixed(2)}` : t('bookingCard.tbd')}
