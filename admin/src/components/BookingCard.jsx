@@ -94,90 +94,105 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
         })
       : '-';
 
-    const receiptHtml = `
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>Receipt ${escapeHtml(orderCode || _id)}</title>
-          <style>
-            @page { size: 80mm auto; margin: 2mm; }
-            @media print {
-              html, body { width: 72mm; max-width: 72mm; }
-            }
-            * { box-sizing: border-box; }
-            html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #111; }
-            body { width: 72mm; max-width: 72mm; padding: 2mm; font-size: 12px; }
-            .top { text-align: center; margin-bottom: 8px; }
-            .brand { font-size: 16px; font-weight: 700; margin: 0; }
-            .line { border-top: 1px dashed #111; margin: 8px 0; }
-            .meta p { margin: 2px 0; font-size: 11px; word-break: break-word; }
-            .meta strong { font-weight: 700; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; table-layout: fixed; }
-            th, td { font-size: 11px; padding: 3px 0; vertical-align: top; }
-            th { text-align: left; border-bottom: 1px solid #111; }
-            .qty { width: 28px; }
-            .name { word-break: break-word; overflow-wrap: anywhere; white-space: normal; padding-right: 4px; }
-            .price { width: 58px; text-align: right; white-space: nowrap; }
-            .sum { margin-top: 10px; }
-            .sum-row { display: flex; justify-content: space-between; font-size: 12px; margin: 3px 0; gap: 8px; }
-            .sum-row.total { font-size: 14px; font-weight: 700; margin-top: 6px; }
-            .foot { text-align: center; margin-top: 12px; font-size: 10px; }
-          </style>
-        </head>
-        <body>
-          <div class="top">
-            <p class="brand">Chapati Delivery</p>
-          </div>
-          <div class="meta">
-            <p><strong>Name:</strong> ${escapeHtml(customer?.name || '-')}</p>
-            <p><strong>Code:</strong> ${escapeHtml(orderCode || _id)}</p>
-            <p><strong>Phone:</strong> ${escapeHtml(customer?.phone || '-')}</p>
-            <p><strong>Placed:</strong> ${escapeHtml(orderCreatedAt)}</p>
-          </div>
-          <div class="line"></div>
-          <table>
-            <thead>
-              <tr>
-                <th class="qty">Qty</th>
-                <th class="name">Product</th>
-                <th class="price">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemRows || '<tr><td colspan="3">No items</td></tr>'}
-            </tbody>
-          </table>
-          <div class="line"></div>
-          <div class="sum">
-            <div class="sum-row total">
-              <span>Grand Total</span>
-              <span>€${computedTotal.toFixed(2)}</span>
-            </div>
-          </div>
-          <div class="line"></div>
-          <p class="foot">Thank you - Chapati Delivery</p>
-        </body>
-      </html>
-    `;
+    const noteBlock = additionalInfo
+      ? `<p><strong>Note:</strong> ${escapeHtml(additionalInfo)}</p>`
+      : '';
 
-    const runPrint = (targetWindow) => {
-      const trigger = () => {
-        try {
-          targetWindow.focus();
-          targetWindow.print();
-        } catch {
-          window.alert(t('bookingCard.printFailed'));
+    const receiptHtml = `<!doctype html>
+<html lang="${isFr ? 'fr' : 'en'}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=80mm, initial-scale=1" />
+    <title>Receipt ${escapeHtml(orderCode || _id)}</title>
+    <style>
+      @page {
+        size: 80mm auto;
+        margin: 1mm 1.5mm;
+      }
+      @media print {
+        html, body {
+          width: 77mm !important;
+          max-width: 77mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
-      };
-      setTimeout(trigger, 350);
-    };
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #111;
+        background: #fff;
+      }
+      body {
+        width: 77mm;
+        max-width: 77mm;
+        padding: 1.5mm;
+        font-size: 11px;
+        line-height: 1.35;
+      }
+      .top { text-align: center; margin-bottom: 6px; }
+      .brand { font-size: 15px; font-weight: 700; margin: 0; }
+      .line { border-top: 1px dashed #111; margin: 6px 0; }
+      .meta p { margin: 2px 0; font-size: 10px; word-break: break-word; }
+      .meta strong { font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+      th, td { font-size: 10px; padding: 2px 0; vertical-align: top; }
+      th { text-align: left; border-bottom: 1px solid #111; }
+      .qty { width: 22px; }
+      .name { word-break: break-word; overflow-wrap: anywhere; white-space: normal; padding-right: 3px; }
+      .price { width: 48px; text-align: right; white-space: nowrap; }
+      .sum { margin-top: 8px; }
+      .sum-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; gap: 6px; }
+      .sum-row.total { font-size: 13px; font-weight: 700; margin-top: 4px; }
+      .foot { text-align: center; margin-top: 10px; font-size: 9px; }
+    </style>
+  </head>
+  <body>
+    <div class="top">
+      <p class="brand">Chapati Delivery</p>
+    </div>
+    <div class="meta">
+      <p><strong>Name:</strong> ${escapeHtml(customer?.name || '-')}</p>
+      <p><strong>Code:</strong> ${escapeHtml(orderCode || _id)}</p>
+      <p><strong>Phone:</strong> ${escapeHtml(customer?.phone || '-')}</p>
+      <p><strong>Placed:</strong> ${escapeHtml(orderCreatedAt)}</p>
+      ${noteBlock}
+    </div>
+    <div class="line"></div>
+    <table>
+      <thead>
+        <tr>
+          <th class="qty">Qty</th>
+          <th class="name">Product</th>
+          <th class="price">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows || '<tr><td colspan="3">No items</td></tr>'}
+      </tbody>
+    </table>
+    <div class="line"></div>
+    <div class="sum">
+      <div class="sum-row total">
+        <span>Grand Total</span>
+        <span>€${computedTotal.toFixed(2)}</span>
+      </div>
+    </div>
+    <div class="line"></div>
+    <p class="foot">Thank you - Chapati Delivery</p>
+  </body>
+</html>`;
 
     const iframe = document.createElement('iframe');
     iframe.setAttribute('title', t('bookingCard.printReceipt'));
     iframe.setAttribute('aria-hidden', 'true');
-    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:0;height:0;border:0;';
+    // Non-zero size helps mobile browsers render printable content (77–80mm roll).
+    iframe.style.cssText =
+      'position:fixed;left:-9999px;top:0;width:80mm;height:100vh;border:0;opacity:0;pointer-events:none;';
     document.body.appendChild(iframe);
 
     const iframeWin = iframe.contentWindow;
@@ -187,19 +202,39 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
       return;
     }
 
+    let cleanedUp = false;
     const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
       if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+    };
+
+    let printStarted = false;
+    const triggerPrint = () => {
+      if (printStarted) return;
+      printStarted = true;
+      window.setTimeout(() => {
+        try {
+          iframeWin.focus();
+          iframeWin.print();
+        } catch {
+          window.alert(t('bookingCard.printFailed'));
+          cleanup();
+        }
+      }, 450);
     };
 
     iframeWin.document.open();
     iframeWin.document.write(receiptHtml);
     iframeWin.document.close();
 
-    iframe.onload = () => runPrint(iframeWin);
-    runPrint(iframeWin);
+    iframe.addEventListener('load', triggerPrint, { once: true });
+    if (iframeWin.document.readyState === 'complete') {
+      triggerPrint();
+    }
 
     iframeWin.onafterprint = cleanup;
-    setTimeout(cleanup, 120_000);
+    window.setTimeout(cleanup, 120_000);
   };
 
   return (

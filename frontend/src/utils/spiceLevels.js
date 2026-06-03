@@ -26,10 +26,10 @@ export const itemNeedsSpice = (id) =>
 
 /** Internal codes stored in cart / orders: '0' | '1' | '2' | '3' */
 export const SPICE_LEVEL_LABELS = {
-  '0': { en: 'No spice', fr: 'Sans épice' },
-  '1': { en: 'Light spice', fr: 'Épices légères' },
+  '0': { en: 'Mild / No spice', fr: 'Doux' },
+  '1': { en: 'Lightly spiced', fr: 'Légèrement épicé' },
   '2': { en: 'Medium spice', fr: 'Épices moyennes' },
-  '3': { en: 'Heavy spice', fr: 'Épices fortes' },
+  '3': { en: 'Hot', fr: 'Très épicé' },
 };
 
 export const SPICE_LEVEL_OPTIONS = ['0', '1', '2', '3'];

@@ -1,38 +1,116 @@
 const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
+
+const FROM_NAME = process.env.FROM_NAME || 'Chapati 35';
 
 /**
  * Unified email sender. Switch provider via EMAIL_PROVIDER env var.
  *
- * ─── Resend (default) ────────────────────────────────────────────────────────
- *   EMAIL_PROVIDER=resend   (or leave unset)
+ * ─── cPanel / SMTP (recommended for cPanel mailbox) ─────────────────────────
+ *   EMAIL_PROVIDER=smtp
+ *   SMTP_HOST=mail.yourdomain.com
+ *   SMTP_PORT=465
+ *   SMTP_SECURE=true
+ *   SMTP_USER=orders@yourdomain.com
+ *   SMTP_PASS=your-mailbox-password
+ *   FROM_EMAIL=orders@yourdomain.com
+ *   FROM_NAME=Chapati 35
+ *
+ *   Port 587 example:
+ *   SMTP_PORT=587
+ *   SMTP_SECURE=false
+ *
+ * ─── Resend ─────────────────────────────────────────────────────────────────
+ *   EMAIL_PROVIDER=resend
  *   RESEND_API_KEY=re_xxxxxxxxxxxx
- *   FROM_EMAIL=noreply@yourdomain.com   (must be verified in Resend dashboard)
- *
- * ─── AWS SES (future) ────────────────────────────────────────────────────────
- *   EMAIL_PROVIDER=ses
- *   AWS_REGION=eu-west-3
- *   AWS_ACCESS_KEY_ID=AKIAxxxxxxxxxx
- *   AWS_SECRET_ACCESS_KEY=xxxxxxxx
- *   FROM_EMAIL=noreply@yourdomain.com   (must be verified in SES)
- *
- * The function signature never changes — only env vars differ between providers.
+ *   FROM_EMAIL=noreply@yourdomain.com
  *
  * @returns {Promise<{ ok: true } | { ok: false, error: string }>}
  */
 const sendEmail = async (to, subject, text, html) => {
   const provider = (process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
 
+  if (provider === 'smtp') {
+    return sendViaSmtp(to, subject, text, html);
+  }
+
   if (provider === 'resend') {
     return sendViaResend(to, subject, text, html);
   }
 
-  if (provider === 'ses') {
-    return sendViaSes(to, subject, text, html);
-  }
-
-  const msg = `Unknown EMAIL_PROVIDER "${provider}". Use "resend" or "ses".`;
+  const msg = `Unknown EMAIL_PROVIDER "${provider}". Use "smtp" or "resend".`;
   console.error('[email]', msg);
   return { ok: false, error: msg };
+};
+
+const formatFrom = (email) => `${FROM_NAME} <${email}>`;
+
+// ─── cPanel / SMTP (nodemailer) ─────────────────────────────────────────────
+
+let smtpTransporter;
+
+const getSmtpTransporter = () => {
+  if (smtpTransporter) return smtpTransporter;
+
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 465);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const secure =
+    process.env.SMTP_SECURE != null
+      ? String(process.env.SMTP_SECURE).toLowerCase() === 'true'
+      : port === 465;
+
+  if (!host || !user || !pass) {
+    return null;
+  }
+
+  smtpTransporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    tls: {
+      // cPanel shared hosts sometimes use self-signed certs
+      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
+    },
+  });
+
+  return smtpTransporter;
+};
+
+const sendViaSmtp = async (to, subject, text, html) => {
+  const from = process.env.FROM_EMAIL || process.env.SMTP_USER;
+  const transporter = getSmtpTransporter();
+
+  if (!from) {
+    const msg = 'FROM_EMAIL or SMTP_USER is missing for SMTP.';
+    console.error('[email]', msg);
+    return { ok: false, error: msg };
+  }
+
+  if (!transporter) {
+    const msg = 'SMTP_HOST, SMTP_USER, or SMTP_PASS is missing. Add them in backend .env.';
+    console.error('[email]', msg);
+    return { ok: false, error: msg };
+  }
+
+  try {
+    await transporter.sendMail({
+      from: formatFrom(from),
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    console.log(`[email] sent via SMTP to ${to} (subject: ${subject})`);
+    return { ok: true };
+  } catch (err) {
+    const msg = err?.message || String(err);
+    console.error('[email] SMTP error:', msg);
+    return { ok: false, error: msg };
+  }
 };
 
 // ─── Resend ──────────────────────────────────────────────────────────────────
@@ -42,7 +120,7 @@ const sendViaResend = async (to, subject, text, html) => {
   const from = process.env.FROM_EMAIL;
 
   if (!apiKey || !from) {
-    const msg = 'RESEND_API_KEY or FROM_EMAIL is missing. Add both in Render → Environment.';
+    const msg = 'RESEND_API_KEY or FROM_EMAIL is missing. Add both in backend environment.';
     console.error('[email]', msg);
     return { ok: false, error: msg };
   }
@@ -50,7 +128,7 @@ const sendViaResend = async (to, subject, text, html) => {
   try {
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
-      from: `Chapati 35 <${from}>`,
+      from: formatFrom(from),
       to,
       subject,
       text,
@@ -67,48 +145,6 @@ const sendViaResend = async (to, subject, text, html) => {
   } catch (err) {
     const msg = err?.message || String(err);
     console.error('[email] Resend exception:', msg);
-    return { ok: false, error: msg };
-  }
-};
-
-// ─── AWS SES (ready to enable — install @aws-sdk/client-sesv2 first) ─────────
-// npm install @aws-sdk/client-sesv2
-
-const sendViaSes = async (to, subject, text, html) => {
-  const region = process.env.AWS_REGION;
-  const from = process.env.FROM_EMAIL;
-
-  if (!region || !from) {
-    const msg = 'AWS_REGION or FROM_EMAIL is missing for SES.';
-    console.error('[email]', msg);
-    return { ok: false, error: msg };
-  }
-
-  try {
-    const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2');
-    const client = new SESv2Client({ region });
-
-    await client.send(
-      new SendEmailCommand({
-        FromEmailAddress: `Chapati 35 <${from}>`,
-        Destination: { ToAddresses: [to] },
-        Content: {
-          Simple: {
-            Subject: { Data: subject },
-            Body: {
-              Text: { Data: text },
-              Html: { Data: html },
-            },
-          },
-        },
-      }),
-    );
-
-    console.log(`[email] sent via SES to ${to} (subject: ${subject})`);
-    return { ok: true };
-  } catch (err) {
-    const msg = err?.message || String(err);
-    console.error('[email] SES error:', msg);
     return { ok: false, error: msg };
   }
 };
