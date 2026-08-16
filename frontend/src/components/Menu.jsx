@@ -44,6 +44,7 @@ const Menu = () => {
                   </div>
                   <div className="menu-card-content">
                     <h4>{item.title}</h4>
+                    {item.description && <p className="menu-card-desc">{item.description}</p>}
                     <button className="btn-primary">
                       {isFr ? 'Voir tout' : 'View full'}
                     </button>

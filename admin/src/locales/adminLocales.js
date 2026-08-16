@@ -127,6 +127,8 @@ const en = {
     collected: 'Collected',
     printReceipt: 'Print',
     printFailed: 'Could not open the print dialog. Allow pop-ups or try again from the browser menu.',
+    orderDateTime: 'Order date & time',
+    reservationDateTime: 'Reservation date & time',
   },
   analytics: {
     title: 'Analytics',
@@ -360,6 +362,8 @@ const fr = {
     collected: 'Récupéré',
     printReceipt: 'Imprimer',
     printFailed: "Impossible d'ouvrir l'impression. Autorisez les fenêtres pop-up ou réessayez via le menu du navigateur.",
+    orderDateTime: 'Date et heure de commande',
+    reservationDateTime: 'Date et heure de réservation',
   },
   analytics: {
     title: 'Analytique',

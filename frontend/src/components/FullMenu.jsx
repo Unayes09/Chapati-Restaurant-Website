@@ -19,6 +19,8 @@ const FullMenu = () => {
   const [sagorikaDessert, setSagorikaDessert] = useState('halwa');
   const [naan1495Choice, setNaan1495Choice] = useState('fried-naan');
   const [naan1595Choice, setNaan1595Choice] = useState('chapati-special');
+  const [naan1495Drink, setNaan1495Drink] = useState('coca-cola-33');
+  const [naan1595Drink, setNaan1595Drink] = useState('coca-cola-33');
 
   const categories = useMemo(() => [
     { id: 'all', fr: 'Tout', en: 'All' },
@@ -259,21 +261,66 @@ const FullMenu = () => {
     [],
   );
 
-  const naan1495Label = useMemo(() => {
-    const choiceLabel = naan1495Options.find((o) => o.value === naan1495Choice)?.[isFr ? 'fr' : 'en'] || '';
-    return isFr
-      ? `Menu Naan Sandwich (14,95€) – ${choiceLabel}`
-      : `Naan Sandwich Menu (€14.95) – ${choiceLabel}`;
-  }, [isFr, naan1495Choice, naan1495Options]);
+  /** Drinks for Menu Naan Sandwich — all drinks except mango/rose lassi and beer */
+  const naanMenuDrinkOptions = useMemo(
+    () => [
+      { value: 'coca-cola-33', fr: 'Coca-Cola (33 cl)', en: 'Coca-Cola (33 cl)' },
+      { value: 'coca-cola-zero-33', fr: 'Coca-Cola Zero Sugar (33 cl)', en: 'Coca-Cola Zero Sugar (33 cl)' },
+      { value: 'fuze-tea-or-tropico-33', fr: 'Fuze Tea or Tropico (33 cl)', en: 'Fuze Tea or Tropico (33 cl)' },
+      { value: 'sprite-or-fanta-33', fr: 'Sprite or Fanta (33 cl)', en: 'Sprite or Fanta (33 cl)' },
+      { value: 'apple-juice-25', fr: 'Apple Juice (25 cl)', en: 'Apple Juice (25 cl)' },
+      {
+        value: 'still-or-sparkling-water',
+        fr: 'Eau plate (50 cl) ou pétillante (33 cl)',
+        en: 'Still Water (50 cl) or Sparkling Water (33 cl)',
+      },
+    ],
+    [],
+  );
 
-  const naan1595Label = useMemo(() => {
-    const choiceLabel = naan1595Options.find((o) => o.value === naan1595Choice)?.[isFr ? 'fr' : 'en'] || '';
+  const getNaanMenuDrinkLabel = (drinkValue) =>
+    naanMenuDrinkOptions.find((o) => o.value === drinkValue)?.[isFr ? 'fr' : 'en'] || '';
+
+  const clearNaanMenuFromCart = (priceTier) => {
+    setCart((prev) => {
+      const prefix = priceTier === '1495' ? 'menu-naan-1495__' : 'menu-naan-1595__';
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (key.startsWith(prefix)) delete next[key];
+      });
+      return next;
+    });
+  };
+
+  const buildNaanMenuLabel = (priceLabel, sandwichValue, drinkValue) => {
+    const sandwichLabel =
+      (priceLabel === '1495' ? naan1495Options : naan1595Options).find((o) => o.value === sandwichValue)?.[
+        isFr ? 'fr' : 'en'
+      ] || '';
+    const drinkLabel = getNaanMenuDrinkLabel(drinkValue);
     return isFr
-      ? `Menu Naan Sandwich (15,95€) – ${choiceLabel}`
-      : `Naan Sandwich Menu (€15.95) – ${choiceLabel}`;
-  }, [isFr, naan1595Choice, naan1595Options]);
-  const naan1495CartId = useMemo(() => `menu-naan-1495__${naan1495Choice}`, [naan1495Choice]);
-  const naan1595CartId = useMemo(() => `menu-naan-1595__${naan1595Choice}`, [naan1595Choice]);
+      ? `Menu Naan Sandwich (${priceLabel === '1495' ? '14,95' : '15,95'}€) – ${sandwichLabel}, Boisson: ${drinkLabel}`
+      : `Naan Sandwich Menu (€${priceLabel === '1495' ? '14.95' : '15.95'}) – ${sandwichLabel}, Drink: ${drinkLabel}`;
+  };
+
+  const naan1495Label = useMemo(
+    () => buildNaanMenuLabel('1495', naan1495Choice, naan1495Drink),
+    [isFr, naan1495Choice, naan1495Drink, naan1495Options, naanMenuDrinkOptions],
+  );
+
+  const naan1595Label = useMemo(
+    () => buildNaanMenuLabel('1595', naan1595Choice, naan1595Drink),
+    [isFr, naan1595Choice, naan1595Drink, naan1595Options, naanMenuDrinkOptions],
+  );
+
+  const naan1495CartId = useMemo(
+    () => `menu-naan-1495__${naan1495Choice}__${naan1495Drink}`,
+    [naan1495Choice, naan1495Drink],
+  );
+  const naan1595CartId = useMemo(
+    () => `menu-naan-1595__${naan1595Choice}__${naan1595Drink}`,
+    [naan1595Choice, naan1595Drink],
+  );
 
   const totalItems = useMemo(
     () =>
@@ -478,8 +525,8 @@ const FullMenu = () => {
               </div>
               <p className="full-menu-note">
                 {isFr
-                  ? 'Servi avec frites et une canette de soda.'
-                  : 'Includes fries and one can of soda.'}
+                  ? 'Servi avec frites et une boisson au choix (liste ci-dessous — hors lassi mangue/rose et bière).'
+                  : 'Includes fries and a drink of your choice (select below — mango/rose lassi and beer excluded).'}
               </p>
               <div className="full-menu-bundle-controls">
                 <div className="full-menu-bundle-split">
@@ -497,12 +544,30 @@ const FullMenu = () => {
                             checked={naan1495Choice === opt.value}
                             onChange={(e) => {
                               const nextValue = e.target.value;
+                              clearNaanMenuFromCart('1495');
                               setNaan1495Choice(nextValue);
                             }}
                           />
                           <span>{isFr ? opt.fr : opt.en}</span>
                         </label>
                       ))}
+                    </div>
+                    <div className="full-menu-bundle-row">
+                      <span className="full-menu-bundle-label">{isFr ? 'Boisson *' : 'Drink *'}</span>
+                      <select
+                        className="full-menu-bundle-select"
+                        value={naan1495Drink}
+                        onChange={(e) => {
+                          clearNaanMenuFromCart('1495');
+                          setNaan1495Drink(e.target.value);
+                        }}
+                      >
+                        {naanMenuDrinkOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {isFr ? opt.fr : opt.en}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {cart[naan1495CartId] ? (
                       <button
@@ -537,12 +602,30 @@ const FullMenu = () => {
                             checked={naan1595Choice === opt.value}
                             onChange={(e) => {
                               const nextValue = e.target.value;
+                              clearNaanMenuFromCart('1595');
                               setNaan1595Choice(nextValue);
                             }}
                           />
                           <span>{isFr ? opt.fr : opt.en}</span>
                         </label>
                       ))}
+                    </div>
+                    <div className="full-menu-bundle-row">
+                      <span className="full-menu-bundle-label">{isFr ? 'Boisson *' : 'Drink *'}</span>
+                      <select
+                        className="full-menu-bundle-select"
+                        value={naan1595Drink}
+                        onChange={(e) => {
+                          clearNaanMenuFromCart('1595');
+                          setNaan1595Drink(e.target.value);
+                        }}
+                      >
+                        {naanMenuDrinkOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {isFr ? opt.fr : opt.en}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {cart[naan1595CartId] ? (
                       <button

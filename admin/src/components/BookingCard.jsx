@@ -45,6 +45,25 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
     });
   }, [createdAt]);
 
+  const createdDateTimeText = useMemo(() => {
+    if (!createdAt) return '';
+    return new Date(createdAt).toLocaleString('fr-FR', {
+      timeZone: 'Europe/Paris',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }, [createdAt]);
+
+  const reservationDateTimeText = useMemo(() => {
+    if (!bookingDate && !bookingTime) return '';
+    if (bookingDate && bookingTime) return `${bookingDate} • ${bookingTime}`;
+    return bookingDate || bookingTime;
+  }, [bookingDate, bookingTime]);
+
   const readyAtText = useMemo(() => {
     if (!pickupReadyAt) return '';
     return new Date(pickupReadyAt).toLocaleTimeString('fr-FR', {
@@ -65,6 +84,14 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
 
   const printReceipt = () => {
     if (!isPickup) return;
+
+    // A standalone document is more reliable than printing the admin DOM on mobile.
+    // Open synchronously from the click so mobile popup blockers allow it.
+    const printWindow = window.open('', '_blank', 'width=420,height=760');
+    if (!printWindow) {
+      window.alert(t('bookingCard.printFailed'));
+      return;
+    }
 
     const receiptItems = Array.isArray(items) ? items : [];
     const itemRows = receiptItems
@@ -98,143 +125,149 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
       ? `<p><strong>Note:</strong> ${escapeHtml(additionalInfo)}</p>`
       : '';
 
+    const printButtonLabel = isFr ? 'Imprimer le reçu' : 'Print receipt';
     const receiptHtml = `<!doctype html>
-<html lang="${isFr ? 'fr' : 'en'}">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=80mm, initial-scale=1" />
-    <title>Receipt ${escapeHtml(orderCode || _id)}</title>
-    <style>
-      @page {
-        size: 80mm auto;
-        margin: 1mm 1.5mm;
-      }
-      @media print {
-        html, body {
-          width: 77mm !important;
-          max-width: 77mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-      }
-      * { box-sizing: border-box; }
-      html, body {
-        margin: 0;
-        padding: 0;
-        font-family: Arial, Helvetica, sans-serif;
-        color: #111;
-        background: #fff;
-      }
-      body {
-        width: 77mm;
-        max-width: 77mm;
-        padding: 1.5mm;
-        font-size: 11px;
-        line-height: 1.35;
-      }
-      .top { text-align: center; margin-bottom: 6px; }
-      .brand { font-size: 15px; font-weight: 700; margin: 0; }
-      .line { border-top: 1px dashed #111; margin: 6px 0; }
-      .meta p { margin: 2px 0; font-size: 10px; word-break: break-word; }
-      .meta strong { font-weight: 700; }
-      table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
-      th, td { font-size: 10px; padding: 2px 0; vertical-align: top; }
-      th { text-align: left; border-bottom: 1px solid #111; }
-      .qty { width: 22px; }
-      .name { word-break: break-word; overflow-wrap: anywhere; white-space: normal; padding-right: 3px; }
-      .price { width: 48px; text-align: right; white-space: nowrap; }
-      .sum { margin-top: 8px; }
-      .sum-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; gap: 6px; }
-      .sum-row.total { font-size: 13px; font-weight: 700; margin-top: 4px; }
-      .foot { text-align: center; margin-top: 10px; font-size: 9px; }
-    </style>
-  </head>
-  <body>
-    <div class="top">
-      <p class="brand">Chapati Delivery</p>
-    </div>
-    <div class="meta">
-      <p><strong>Name:</strong> ${escapeHtml(customer?.name || '-')}</p>
-      <p><strong>Code:</strong> ${escapeHtml(orderCode || _id)}</p>
-      <p><strong>Phone:</strong> ${escapeHtml(customer?.phone || '-')}</p>
-      <p><strong>Placed:</strong> ${escapeHtml(orderCreatedAt)}</p>
-      ${noteBlock}
-    </div>
-    <div class="line"></div>
-    <table>
-      <thead>
-        <tr>
-          <th class="qty">Qty</th>
-          <th class="name">Product</th>
-          <th class="price">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${itemRows || '<tr><td colspan="3">No items</td></tr>'}
-      </tbody>
-    </table>
-    <div class="line"></div>
-    <div class="sum">
-      <div class="sum-row total">
-        <span>Grand Total</span>
-        <span>€${computedTotal.toFixed(2)}</span>
-      </div>
-    </div>
-    <div class="line"></div>
-    <p class="foot">Thank you - Chapati Delivery</p>
-  </body>
-</html>`;
+      <html lang="${isFr ? 'fr' : 'en'}">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        <title>Receipt ${escapeHtml(orderCode || _id)}</title>
+        <style>
+          @page { size: 80mm auto; margin: 2mm 1.5mm; }
+          * { box-sizing: border-box; }
+          html, body {
+            margin: 0;
+            padding: 0;
+            min-width: 0;
+            min-height: 0;
+            height: auto;
+            background: #fff;
+            color: #111;
+            font-family: Arial, Helvetica, sans-serif;
+          }
+          body {
+            width: 100%;
+            padding: 12px;
+          }
+          .receipt {
+            width: 100%;
+            max-width: 77mm;
+            margin: 0 auto;
+            font-size: 11px;
+            line-height: 1.35;
+            background: #fff;
+          }
+          .top { text-align: center; margin-bottom: 6px; }
+          .brand { font-size: 15px; font-weight: 700; margin: 0; }
+          .line { border-top: 1px dashed #111; margin: 6px 0; }
+          .meta p { margin: 2px 0; font-size: 10px; overflow-wrap: anywhere; }
+          table { width: 100%; border-collapse: collapse; margin-top: 6px; table-layout: fixed; }
+          th, td { font-size: 10px; padding: 2px 0; vertical-align: top; }
+          th { text-align: left; border-bottom: 1px solid #111; }
+          .qty { width: 22px; }
+          .name { padding-right: 3px; word-break: break-word; overflow-wrap: anywhere; white-space: normal; }
+          .price { width: 52px; text-align: right; white-space: nowrap; }
+          .sum-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+          }
+          .sum-row.total { font-size: 13px; font-weight: 700; margin-top: 8px; }
+          .foot { text-align: center; margin-top: 10px; font-size: 9px; }
+          .print-action {
+            display: block;
+            width: min(77mm, calc(100% - 24px));
+            margin: 18px auto;
+            padding: 12px;
+            border: 0;
+            border-radius: 8px;
+            background: #334155;
+            color: #fff;
+            font: 700 15px Arial, sans-serif;
+          }
+          @media print {
+            html, body {
+              width: 77mm !important;
+              max-width: 77mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              min-height: 0 !important;
+              overflow: visible !important;
+            }
+            body { padding: 0 !important; }
+            .receipt {
+              width: 77mm !important;
+              max-width: 77mm !important;
+              margin: 0 !important;
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+            .print-action { display: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <main class="receipt">
+          <div class="top">
+            <p class="brand">Chapati Delivery</p>
+          </div>
+          <div class="meta">
+            <p><strong>Name:</strong> ${escapeHtml(customer?.name || '-')}</p>
+            <p><strong>Code:</strong> ${escapeHtml(orderCode || _id)}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(customer?.phone || '-')}</p>
+            <p><strong>Placed:</strong> ${escapeHtml(orderCreatedAt)}</p>
+            ${noteBlock}
+          </div>
+          <div class="line"></div>
+          <table>
+            <thead>
+              <tr>
+                <th class="qty">Qty</th>
+                <th class="name">Product</th>
+                <th class="price">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows || '<tr><td colspan="3">No items</td></tr>'}
+            </tbody>
+          </table>
+          <div class="line"></div>
+          <div class="sum-row total">
+            <span>Grand Total</span>
+            <span>€${computedTotal.toFixed(2)}</span>
+          </div>
+          <div class="line"></div>
+          <p class="foot">Thank you - Chapati Delivery</p>
+        </main>
+        <button class="print-action" type="button" onclick="window.print()">
+          ${printButtonLabel}
+        </button>
+      </body>
+      </html>`;
 
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('title', t('bookingCard.printReceipt'));
-    iframe.setAttribute('aria-hidden', 'true');
-    // Non-zero size helps mobile browsers render printable content (77–80mm roll).
-    iframe.style.cssText =
-      'position:fixed;left:-9999px;top:0;width:80mm;height:100vh;border:0;opacity:0;pointer-events:none;';
-    document.body.appendChild(iframe);
-
-    const iframeWin = iframe.contentWindow;
-    if (!iframeWin) {
-      document.body.removeChild(iframe);
-      window.alert(t('bookingCard.printFailed'));
-      return;
-    }
-
-    let cleanedUp = false;
-    const cleanup = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
-    };
+    printWindow.document.open();
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
 
     let printStarted = false;
     const triggerPrint = () => {
-      if (printStarted) return;
+      if (printStarted || printWindow.closed) return;
       printStarted = true;
-      window.setTimeout(() => {
+      printWindow.setTimeout(() => {
         try {
-          iframeWin.focus();
-          iframeWin.print();
+          printWindow.focus();
+          printWindow.print();
         } catch {
-          window.alert(t('bookingCard.printFailed'));
-          cleanup();
+          // The standalone receipt remains open with a manual Print button.
         }
-      }, 450);
+      }, 500);
     };
 
-    iframeWin.document.open();
-    iframeWin.document.write(receiptHtml);
-    iframeWin.document.close();
-
-    iframe.addEventListener('load', triggerPrint, { once: true });
-    if (iframeWin.document.readyState === 'complete') {
+    printWindow.addEventListener('load', triggerPrint, { once: true });
+    if (printWindow.document.readyState === 'complete') {
       triggerPrint();
     }
-
-    iframeWin.onafterprint = cleanup;
-    window.setTimeout(cleanup, 120_000);
   };
 
   return (
@@ -343,6 +376,26 @@ const BookingCard = ({ booking, onReceive, onReject, onCollected }) => {
 
       {expanded && (
         <div className="booking-row-details">
+          {(createdDateTimeText || reservationDateTimeText) && (
+            <div className="booking-row-details-meta">
+              {isPickup && createdDateTimeText && (
+                <p>
+                  <strong>{t('bookingCard.orderDateTime')}:</strong> {createdDateTimeText}
+                </p>
+              )}
+              {!isPickup && reservationDateTimeText && (
+                <p>
+                  <strong>{t('bookingCard.reservationDateTime')}:</strong> {reservationDateTimeText}
+                </p>
+              )}
+              {!isPickup && createdDateTimeText && (
+                <p>
+                  <strong>{t('orders.createdDate')}:</strong> {createdDateTimeText}
+                </p>
+              )}
+            </div>
+          )}
+
           {additionalInfo && (
             <div className="booking-row-note">
               <strong>{t('bookingCard.note')}:</strong> {additionalInfo}

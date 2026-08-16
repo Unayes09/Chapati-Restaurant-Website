@@ -362,6 +362,21 @@ section {
 .hero-buttons button {
   min-width: 250px;
 }
+.hero-order-hint {
+  max-width: 720px;
+  margin: 28px auto 0;
+  font-size: 16px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+}
+.menu-card-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+  margin: 0 0 16px;
+  font-weight: 600;
+}
 
 /* Concept */
 .concept-grid {

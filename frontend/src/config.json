@@ -19,7 +19,8 @@
       "hero": {
         "title": "RESTAURANT DE STREET FOOD INDIENNE",
         "subtitle": "À EMPORTER & EN LIVRAISON à Saint-Malo, France",
-        "order": "COMMANDER"
+        "order": "COMMANDER",
+        "orderHint": "Commandez en ligne : currys, biryanis, naan sandwichs, menus complets, entrées, grillades et boissons — choisissez vos plats et récupérez votre commande au restaurant."
       },
       "concept": {
         "label": "concept",
@@ -38,7 +39,11 @@
         "items": [
           { "title": "Découvrez nos Biryanis", "button": "COMMANDER" },
           { "title": "Découvrez nos Curry", "button": "COMMANDER" },
-          { "title": "Découvrez nos Naans", "button": "COMMANDER" }
+          {
+            "title": "Découvrez nos Naans",
+            "description": "Sandwichs naan et menus avec frites + boisson au choix.",
+            "button": "COMMANDER"
+          }
         ]
       },
       "testimonials": {
@@ -105,7 +110,8 @@
       "hero": {
         "title": "INDIAN STREET FOOD RESTAURANT",
         "subtitle": "TAKEAWAY & DELIVERY in Saint-Malo, France",
-        "order": "ORDER"
+        "order": "ORDER",
+        "orderHint": "Order online: curries, biryanis, naan sandwiches, set menus, starters, grills and drinks — pick your dishes and collect at the restaurant."
       },
       "concept": {
         "label": "concept",
@@ -124,7 +130,11 @@
         "items": [
           { "title": "Discover our Biryanis", "button": "ORDER" },
           { "title": "Discover our Curries", "button": "ORDER" },
-          { "title": "Discover our Naans", "button": "ORDER" }
+          {
+            "title": "Discover our Naans",
+            "description": "Naan sandwiches and menus with fries + drink of your choice.",
+            "button": "ORDER"
+          }
         ]
       },
       "testimonials": {

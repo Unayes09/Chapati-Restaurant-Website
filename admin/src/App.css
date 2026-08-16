@@ -1310,6 +1310,31 @@ body {
   padding: 16px 18px;
 }
 
+.booking-row-details-meta {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.booking-row-details-meta p {
+  margin: 0;
+}
+
+.booking-row-details-meta p + p {
+  margin-top: 6px;
+}
+
+.booking-row-details-meta strong {
+  color: #0f172a;
+  font-weight: 800;
+  margin-right: 6px;
+}
+
 .booking-row-note {
   background: #fffbeb;
   border-left: 4px solid var(--secondary);

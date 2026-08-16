@@ -19,6 +19,9 @@ const Hero = () => {
           <div className="hero-buttons">
             <button className="btn-primary" onClick={handleOrderClick}>{t.hero.order}</button>
           </div>
+          {t.hero.orderHint && (
+            <p className="hero-order-hint">{t.hero.orderHint}</p>
+          )}
         </div>
       </div>
     </section>
