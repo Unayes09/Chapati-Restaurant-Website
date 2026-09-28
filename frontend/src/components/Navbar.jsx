@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../LanguageContext';
-import logo from '../assets/chapati.jpeg';
 import gbFlag from '../assets/gb.png';
 import frFlag from '../assets/fr.png';
 
@@ -51,7 +50,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="container nav-container">
         <div className="logo-container">
-          <img src={logo} alt="Chapati Logo" className="logo" onClick={handleHomeClick} style={{ cursor: 'pointer' }} />
+          <img src="/chapati.jpeg" alt="Chapati Indian Street Food" className="logo" onClick={handleHomeClick} style={{ cursor: 'pointer' }} />
         </div>
 
         <div className={`nav-menu ${isMenuOpen ? 'open' : ''}`}>

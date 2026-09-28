@@ -1,194 +1,212 @@
-Chapati 35
+# Restaurant Website & Operations Platform
 
-Overview
+## Overview
 
-- Customer website (frontend) for placing pickup orders and table reservations
-- Admin portal (admin) for managing live orders, reservations, messages and analytics
-- Backend API (backend) with MongoDB, Socket.IO realtime events and email notifications
+This is a fully branded restaurant website with an integrated online ordering, table-reservation, customer-contact, and staff-management system. It can be adapted to a restaurant's own name, logo, colours, menu, contact details, opening hours, language, and external delivery links.
 
-Structure
+The platform consists of two connected experiences:
 
-- frontend/ — Vite + React single-page site
-- admin/ — Vite + React admin dashboard
-- backend/ — Node.js (Express) + MongoDB + Socket.IO
+- **Customer website** — a polished, mobile-friendly website where guests can explore the restaurant, place collection orders, reserve a table, and get in touch.
+- **Private admin dashboard** — a secure staff area for handling orders, reservations, customer messages, live alerts, and operational reporting.
 
-Tech Stack
 
-- Client: React, Vite, plain CSS
-- Admin: React, Vite, plain CSS
-- Server: Node.js, Express, Mongoose, Socket.IO, Nodemailer
-- Database: MongoDB (Atlas recommended)
 
-Key Features
+## Customer Website Features
 
-- Orders (pickup)
-  - Customers choose items, set a requested pickup time (15/30/45/60 minutes) and submit
-  - Restaurant receives a realtime “new order” event; admin can Receive/Reject and later mark Collected
-  - Customer receives email updates
-- Reservations (table booking)
-  - Customers reserve a 2/4/6/8 seat table on available dates/times (Paris timezone); auto‑confirmed by server
-  - Admin can filter reservations (single day or date range + optional time)
-- Messages
-  - Footer contact form posts messages to the API
-  - Admin inbox with search, mark read, delete and pagination
-- Analytics & Tools (admin)
-  - Last 30‑day totals and a 14‑day mini chart for orders, reservations, messages
-  - Retention cleanup: keep last 15/30/60 days for orders/reservations/messages
-- Realtime
-  - Socket.IO “new_order” pushes to admin; a short beep plays after user clicks Enable Sound
 
-Getting Started
 
-Prerequisites
+### Brand-led restaurant website
 
-- Node.js 18+ and npm
-- A MongoDB URI (local or Atlas)
-- A Gmail (or SMTP) sender for emails (uses app password)
+- Bespoke landing page with hero section, restaurant concept, food imagery, menu highlights, customer reviews, partner/delivery links, and footer information.
+- Brand identity can be tailored with the client's name, logo, colour palette, food photos, descriptions, social profiles, location, opening hours, and payment-method display.
+- Responsive layout designed for desktop, tablet, and mobile use.
+- Mobile navigation menu for a smooth experience on smaller screens.
 
-1) Clone & Install
 
-1. Clone this repository
-2. Install dependencies in each workspace
-   - cd backend && npm install
-   - cd ../frontend && npm install
-   - cd ../admin && npm install
 
-2) Environment Variables
+### Multilingual experience
 
-Backend (backend/.env)
+- Built-in language switcher for French/Others and English.
+- Website content, navigation, menu labels, forms, and customer-facing messages can be presented in both languages.
+- Language content can be customised for the client’s preferred markets.
 
-- PORT=8000
-- MONGO_URI=your_mongodb_connection_string
-- JWT_SECRET=your_secret
-- EMAIL_USER=you@example.com
-- EMAIL_PASS=your_app_password
 
-Frontend/Admin (Vite)
 
-- Both apps read VITE_API_URL at runtime
-- For local dev: VITE_API_URL=http://localhost:8000
-- For Netlify/production: set VITE_API_URL to your deployed backend base URL (https://your-api.example.com)
+### Interactive full menu
 
-3) Run Locally
+- A dedicated full-menu page for displaying all food and drink categories.
+- Category navigation helps guests find dishes quickly.
+- Each item can show its name, price, description, and image where required.
+- Guests can add menu items to a basket directly from the menu.
+- Quantities can be increased or decreased before checkout.
+- Suitable for restaurant-specific categories such as starters, mains, grills, desserts, drinks, set menus, and more.
 
-- Backend
-  - cd backend
-  - npm run dev (if nodemon configured) or node index.js
-  - Server listens on PORT (default 8000)
 
-- Frontend
-  - cd frontend
-  - npm run dev
-  - Open the shown http://localhost:5173 (or similar) — ensure VITE_API_URL points to backend
 
-- Admin
-  - cd admin
-  - npm run dev
-  - Open the shown http://localhost:5174 (or similar) — ensure VITE_API_URL points to backend
+### Spice-level selection
 
-Creating an Admin User
+- Selected dishes can offer a spice-level choice.
+- Spice preferences are captured per portion, so a guest can order multiple servings of the same dish with different heat levels.
+- The chosen preference travels with the order to the staff dashboard.
 
-- POST /api/auth/registeradminhere (body: name, email, password) to create an admin
-- Then login via /api/auth/login with the same credentials in the admin portal
 
-API Reference (Backend)
 
-Auth
+### Click-and-collect ordering
 
-- POST /api/auth/registeradminhere — create admin user
-- POST /api/auth/login — returns JWT; send as Authorization: Bearer <token> for admin routes
+- Customers can review their basket before submitting an order.
+- Clear order summary with item quantities, individual prices, subtotal, service fee display, and total.
+- Customer checkout form captures name, email address, phone number, preferred collection time, and optional notes.
+- Collection-time options are available in 15-minute increments: 15, 30, 45, or 60 minutes.
+- Useful notes can be included, for example allergies, dietary requirements, or special instructions.
+- Customer details are remembered in the browser for faster repeat ordering or reservation requests.
+- The customer receives an immediate on-screen confirmation after sending the order.
 
-Bookings (orders and reservations)
 
-- POST /api/bookings
-  - Pickup order: include items[], totalAmount, pickupRequestedInMinutes, customer{name,email,phone}, additionalInfo?
-  - Reservation: include table.size (2/4/6/8), bookingDate (YYYY‑MM‑DD), bookingTime (HH:MM), customer, additionalInfo?
-  - Reservations are auto‑confirmed (status=confirmed); pickup orders start as pending
 
-- GET /api/bookings with filters and pagination
-  - Query: date=YYYY‑MM‑DD OR dateFrom/dateTo, time=HH:MM, tableSize, status, orderType=pickup|booking, code, createdDate=YYYY‑MM‑DD, page, limit
-  - Returns { data: [...], pagination: { page, limit, total, totalPages } }
+### Order confirmation emails
 
-- PATCH /api/bookings/:id/receive — confirm a pickup order
-  - Body: { confirmedMinutes: number }
-- PATCH /api/bookings/:id/collected — mark pickup collected
-- PATCH /api/bookings/:id/confirm — confirm a reservation (kept for future; not used now)
-- PATCH /api/bookings/:id/reject — reject order/reservation
+- Customers receive an email when their order request is received.
+- Once staff accepts an order, the customer receives the confirmed collection time and a pickup code.
+- If an order cannot be fulfilled, staff can reject it and the customer receives a status email.
+- Restaurant notification emails can also be enabled, so the team receives the order and customer details by email.
 
-Messages
 
-- POST /api/messages — public endpoint from footer contact form
-  - Body: { name, email, phone?, message }
-- GET /api/messages — admin; supports search/status/page/limit
-- PATCH /api/messages/:id/read — mark as read (admin)
-- DELETE /api/messages/:id — delete (admin)
 
-Admin Tools
+### Table reservations
 
-- GET /api/admin/stats — 30‑day totals + per‑day series (Paris time grouping) for orders, reservations, messages
-- POST /api/admin/cleanup — delete older data
-  - Body: { resource: "orders"|"reservations"|"messages", keepDays: 15|30|60 }
+- Dedicated reservation page for guests to book a table online.
+- Guests select party size, date, time, and contact details, with a field for extra requests.
+- Configurable table-size choices; the current setup supports 2, 4, 6, and 8 guests.
+- Available times are generated in 15-minute slots based on the restaurant’s opening schedule.
+- Same-day bookings automatically hide times that are too close to the current time, allowing staff adequate notice.
+- Date selection supports advance bookings up to three years ahead.
+- Reservations are confirmed on submission and a confirmation email is sent to the guest.
 
-Realtime Events
 
-- Event: new_order — emitted on new pickup orders
-  - Admin listens via Socket.IO and refreshes list; a short beep plays if the operator clicked Enable Sound (browser autoplay policy)
 
-Data Models (simplified)
+### Contact, location, and social presence
 
-Booking
+- Contact form for customer enquiries, including name, email, telephone number, and message.
+- Clear display of phone number, email address, physical address, and opening hours.
+- Quick links to social profiles, Google business listing/maps, and external delivery partners.
+- External delivery links can be connected to the restaurant’s chosen provider.
+- Customer messages are delivered to the private admin inbox for follow-up.
 
-- orderType: "pickup" | "booking"
-- customer: { name, email, phone }
-- items[] (pickup): { id, label, price?, qty }
-- totalAmount (pickup only)
-- For reservations: table.size, bookingDate, bookingTime; status auto "confirmed"
-- Status flow for pickup: pending → received → collected or rejected
 
-Message
 
-- name, email, phone?, message
-- status: "new" | "read"
-- timestamps
+## Private Admin Dashboard
 
-Build & Deploy
 
-Frontend/Admin (Netlify)
 
-- Build command: npm run build
-- Publish directory: dist
-- Environment variable: VITE_API_URL must point to your backend HTTPS URL
-- If you see form inputs without proper spacing on mobile/iOS, use the latest CSS (we force font-size and line-height; appearance: none)
+### Secure staff access
 
-Backend
+- Password-protected admin login.
+- Authenticated access using secure access tokens.
+- Customer and operational data is kept separate from the public website.
 
-- Deploy to any Node host (Railway, Render, VPS). Ensure:
-  - PORT is set (exposed by host or 8000)
-  - MONGO_URI, JWT_SECRET, EMAIL_USER, EMAIL_PASS are configured
-  - CORS is allowed for your frontend/admin origins
 
-Admin Portal Tips
 
-- Enable Sound: click once to allow audio context; then new orders trigger a ~1s beep
-- Use tabs at top: Orders, Reservations, Messages, Analytics
-- Cleanup older data with Tools (keep last 15/30/60 days)
-- Pagination defaults to 10 per page; adjust via limit query if needed
+### Live order management
 
-Quality & Linting
+- New collection orders appear in the dashboard in real time; staff do not need to keep refreshing the page.
+- Optional audible alert for new orders, enabled by a staff member with one click.
+- A live order alert presents the customer details, items, spice preferences, notes, total, requested time, and order code.
+- If several orders arrive together, they are handled in a queue.
+- Staff can accept an order and set the actual confirmed collection time.
+- Staff can reject an order when it cannot be fulfilled.
+- Accepted orders can be marked as collected when handed over.
+- Each order follows a clear status flow: **Pending → Received → Collected**, or **Rejected**.
+- Staff can print a clean receipt for an order.
 
-- Frontend: npm run lint
-- Admin: npm run lint
-- Follow the repo’s conventions; avoid storing secrets in code
 
-Troubleshooting
 
-- EADDRINUSE on backend: another process is using the port; change PORT or stop the other process
-- Inputs look cramped on iOS/Netlify:
-  - Ensure Vite build uses the current App.css (we set line-height, appearance, padding, placeholder color)
-- No admin sound:
-  - Browsers block audio until user interaction — click Enable Sound button once
+### Order search and filters
 
-License
+- Search orders by customer name, email, phone number, or order code.
+- Filter by order status, creation date, reservation date/time, table size, and order type.
+- View collection orders and table reservations separately or through the same operational view.
+- Paginated results keep larger order histories easy to manage.
 
-- Internal project (no license specified). Contact the maintainer for usage.
 
+
+### Reservation management
+
+- Dedicated reservation list for staff.
+- Search reservations by customer details or booking code.
+- Filter reservations by a single date or date range.
+- Quick option to view today's bookings.
+- Booking cards show party size, booking date/time, customer contact details, notes, status, and reference code.
+- Staff can confirm or reject reservations when needed.
+
+
+
+### Customer message inbox
+
+- All website contact-form submissions arrive in a central inbox.
+- Search messages by customer name, email, telephone number, or message content.
+- Filter messages by new or read status.
+- Expand a message to view full customer and enquiry details.
+- One-click email and phone links make replying easy.
+- Staff can mark messages as read or permanently delete completed enquiries.
+
+
+
+## Reporting & Business Insights
+
+The dashboard includes a rolling 30-day operational view to help the restaurant understand demand and performance.
+
+- Total collection orders, table reservations, and customer messages.
+- Collection-order revenue and average order value.
+- Average number of items per collection order.
+- Order, reservation, and message volume over time, including a 14-day visual trend chart.
+- Collection-order and reservation status breakdowns.
+- Hourly collection-order pattern to identify busy periods.
+- Most ordered menu items.
+- Reservation distribution by party size.
+- New versus read message counts.
+- Collection-order versus table-reservation mix.
+
+
+
+## Data Management
+
+- Staff can choose how long to retain orders, reservations, and contact messages.
+- Separate cleanup controls support deleting records older than a chosen retention period, such as 15, 30, or 60 days.
+- Cleanup requires confirmation before records are removed.
+
+
+
+## Included Technical Foundation
+
+- Fast React-based customer site and admin dashboard.
+- Node.js API with a MongoDB database for persistent orders, reservations, users, and messages.
+- Real-time order events for staff notifications.
+- Email notification capability through the restaurant’s configured email/SMTP account.
+- Deployment-ready structure for hosting the public website, admin dashboard, and API separately.
+
+
+
+## Client Customisation Checklist
+
+Before launch, the website can be prepared with the client’s:
+
+- Business name and logo
+- Brand colours, typography, and imagery
+- Restaurant story and homepage content
+- Menu categories, dishes, descriptions, prices, and spice options
+- Opening hours and reservation schedule
+- Address, telephone number, email address, and map/social links
+- Customer-facing language content
+- Email sender address and restaurant notification address
+- External delivery-service links
+- Displayed payment methods
+
+
+
+## Scope Note
+
+The current ordering flow is designed for **online ordering and collection confirmation**. It records the basket total but does not include an online card-payment gateway. If required, an online payment provider can be added as a separate enhancement. External delivery services are linked to their own platforms rather than managed within this dashboard.
+
+## Future Enhancements
+
+Additional features can be designed and added according to the client’s wishes and business requirements. This can include new customer-facing pages, payment integrations, loyalty programmes, delivery workflows, additional languages, third-party integrations, or custom operational tools.

@@ -1,9 +1,7 @@
 import React from 'react';
 import { LanguageProvider } from './LanguageContext';
 import Navbar from './components/Navbar';
-import Hero from './components/Hero';
-import Concept from './components/Concept';
-import Menu from './components/Menu';
+import Landing from './components/Landing';
 import Testimonials from './components/Testimonials';
 import Partners from './components/Partners';
 import Footer from './components/Footer';
@@ -15,9 +13,7 @@ function App() {
       <div className="app">
         <Navbar />
         <main>
-          <Hero />
-          <Concept />
-          <Menu />
+          <Landing />
           <Testimonials />
           <Partners />
         </main>
