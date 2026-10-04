@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../LanguageContext';
+import { useClosedDays } from '../hooks/useClosedDays';
 import {
   appendSpiceToLabel,
   getSpiceLevelLabel,
@@ -129,10 +130,20 @@ const OrderPage = () => {
   };
 
   const isFormValid = formData.name && formData.email && formData.phone && formData.pickupRequestedInMinutes;
+  const { active: activeClosure } = useClosedDays();
 
   const submitBooking = async () => {
     if (!isFormValid || isLoading) return;
-    
+
+    if (activeClosure) {
+      alert(
+        isFr
+          ? 'Le restaurant est fermé aujourd’hui. Les commandes ne peuvent pas être prises pendant cette période.'
+          : 'The restaurant is closed today. Pickup orders cannot be placed during this period.',
+      );
+      return;
+    }
+
     setIsLoading(true);
     
     const payload = {
@@ -208,6 +219,18 @@ const OrderPage = () => {
   return (
     <section className="order-page">
       <div className="container">
+        {activeClosure ? (
+          <div className="closed-day-inline-notice" role="alert">
+            <strong>
+              {isFr ? 'Le restaurant est fermé aujourd’hui.' : 'The restaurant is closed today.'}
+            </strong>
+            <p>
+              {isFr
+                ? 'Les commandes ne peuvent pas être prises pendant cette période.'
+                : 'Pickup orders cannot be placed during this period.'}
+            </p>
+          </div>
+        ) : null}
         {!items.length ? (
           <div className="order-card empty-cart">
             <span className="empty-cart-icon">🛒</span>
@@ -322,7 +345,12 @@ const OrderPage = () => {
                 <a href="/?page=fullmenu" className="btn-back-menu">
                   ← {isFr ? 'Continuer mes achats' : 'Back to Menu'}
                 </a>
-                <button className="btn-checkout" onClick={handleConfirmOrder}>
+                <button
+                  className="btn-checkout"
+                  onClick={handleConfirmOrder}
+                  disabled={Boolean(activeClosure)}
+                  title={activeClosure ? (isFr ? 'Le restaurant est fermé aujourd’hui.' : 'The restaurant is closed today.') : undefined}
+                >
                   {isFr ? 'Confirmer la commande' : 'Confirm Order'}
                 </button>
               </div>
@@ -378,14 +406,14 @@ const OrderPage = () => {
           </form>
 
           <div className="booking-sidebar-footer">
-            <button 
-              type="submit" 
-              className="btn-book-now" 
-              disabled={!isFormValid || isLoading}
+            <button
+              type="submit"
+              className="btn-book-now"
+              disabled={!isFormValid || isLoading || Boolean(activeClosure)}
               onClick={handleBookingSubmit}
             >
-              {isLoading 
-                ? (isFr ? 'Envoi en cours...' : 'Sending...') 
+              {isLoading
+                ? (isFr ? 'Envoi en cours...' : 'Sending...')
                 : (isFr ? 'Réserver ma commande' : 'Book My Order')}
             </button>
           </div>

@@ -1,5 +1,6 @@
 const Booking = require('../models/Booking');
 const sendEmail = require('../utils/email');
+const { isDateClosed, todayParis } = require('../utils/closedDays');
 
 const formatParisTime = (date) =>
   new Date(date).toLocaleTimeString('fr-FR', {
@@ -32,6 +33,25 @@ const createBooking = async (req, res) => {
     } = req.body;
 
     const isPickupOrder = Number.isFinite(Number(pickupRequestedInMinutes));
+
+    // Block bookings and pickups inside any closed-day range.
+    if (isPickupOrder) {
+      // For pickup orders the effective "day" is today (Paris time).
+      const today = todayParis();
+      if (today && (await isDateClosed(today))) {
+        return res.status(409).send({
+          error: 'The restaurant is closed today. Pickup orders cannot be placed on a closed day.',
+          code: 'CLOSED_DAY',
+        });
+      }
+    } else if (typeof bookingDate === 'string') {
+      if (await isDateClosed(bookingDate)) {
+        return res.status(409).send({
+          error: 'The restaurant is closed on the selected date. Please pick another day.',
+          code: 'CLOSED_DAY',
+        });
+      }
+    }
 
     const booking = new Booking(
       isPickupOrder

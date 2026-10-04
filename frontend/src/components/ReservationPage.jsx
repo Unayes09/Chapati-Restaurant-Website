@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useLanguage } from '../LanguageContext';
+import { useClosedDays } from '../hooks/useClosedDays';
 
 const openingHours = {
   0: [{ start: '11:30', end: '14:15' }, { start: '18:30', end: '22:45' }], // Sun
@@ -66,6 +67,7 @@ const generateTimeSlots = (selectedDate) => {
 const ReservationPage = () => {
   const { lang } = useLanguage();
   const isFr = lang === 'fr';
+  const { isDateClosed, active: activeClosure } = useClosedDays();
 
   const minDate = useMemo(() => toDateInputValue(getParisNow()), []);
   const maxDate = useMemo(() => {
@@ -122,6 +124,15 @@ const ReservationPage = () => {
   const submitReservation = async (e) => {
     if (e) e.preventDefault();
     if (!isFormValid || isLoading) return;
+
+    if (isDateClosed(formData.date)) {
+      alert(
+        isFr
+          ? 'Le restaurant est fermé à cette date. Merci de choisir une autre journée.'
+          : 'The restaurant is closed on that date. Please pick another day.',
+      );
+      return;
+    }
 
     setIsLoading(true);
     const payload = {
@@ -247,13 +258,24 @@ const ReservationPage = () => {
               <input
                 type="date"
                 name="date"
-                className="booking-input"
+                className={`booking-input ${isDateClosed(formData.date) ? 'booking-input--closed' : ''}`}
                 required
                 value={formData.date}
                 min={minDate}
                 max={maxDate}
                 onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value, time: '' }))}
               />
+              {isDateClosed(formData.date) ? (
+                <p className="booking-input-hint booking-input-hint--closed">
+                  {activeClosure
+                    ? isFr
+                      ? `Fermé du ${activeClosure.startDate} au ${activeClosure.endDate}.`
+                      : `Closed from ${activeClosure.startDate} to ${activeClosure.endDate}.`
+                    : isFr
+                      ? 'Le restaurant est fermé à cette date.'
+                      : 'The restaurant is closed on that date.'}
+                </p>
+              ) : null}
             </div>
 
             <div className="booking-form-group">

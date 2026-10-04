@@ -6,10 +6,12 @@ import { formatItemLabelForDisplay } from './utils/spiceLevels.js';
 import Navbar from './components/Navbar';
 import AdminSidebar from './components/AdminSidebar';
 import BookingCard from './components/BookingCard';
+import { buildReceiptHtml, printReceiptSilently } from './utils/printReceipt.js';
 import LoginForm from './components/LoginForm';
 import ReservationsPanel from './components/ReservationsPanel';
 import MessagesPanel from './components/MessagesPanel';
 import AnalyticsPanel from './components/AnalyticsPanel';
+import ClosedDaysPanel from './components/ClosedDaysPanel';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -357,6 +359,26 @@ function App() {
     }
   };
 
+  // Accept + print in one click. Sends the same /receive PATCH, then fires the
+  // OS print dialog directly from the current page (no popup, no new tab).
+  const acceptAndPrintNewOrder = async () => {
+    if (!alertBooking?._id) return;
+    const booking = alertBooking;
+    try {
+      await axios.patch(`${API_URL}/api/bookings/${booking._id}/receive`, {
+        confirmedMinutes: Number(newOrderMinutes),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      printReceiptSilently(buildReceiptHtml(booking, { isFr: lang === 'fr', t }));
+      setAlertBooking(null);
+      setIncomingOrderQueue((q) => q.slice(1));
+      fetchBookings();
+    } catch (err) {
+      alert(t('orders.receiveFailed', { msg: err.response?.data?.error || err.message }));
+    }
+  };
+
   const rejectNewOrderAlert = async () => {
     if (!alertBooking?._id) return;
     try {
@@ -441,6 +463,8 @@ function App() {
           <MessagesPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
         ) : activeTab === 'analytics' ? (
           <AnalyticsPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
+        ) : activeTab === 'closedDays' ? (
+          <ClosedDaysPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
         ) : (
         <>
         <section className="admin-controls">
@@ -738,6 +762,9 @@ function App() {
                       </button>
                       <button type="button" className="btn-accept-order" onClick={confirmNewOrderAlertReceive}>
                         {t('orders.newOrderAccept')}
+                      </button>
+                      <button type="button" className="btn-accept-and-print-order" onClick={acceptAndPrintNewOrder}>
+                        {t('orders.newOrderAcceptAndPrint')}
                       </button>
                     </div>
                   </>

@@ -26,8 +26,21 @@ const IconChart = () => (
   </svg>
 );
 
-const NAV_IDS = ['orders', 'reservations', 'messages', 'analytics'];
-const ICONS = { orders: IconOrders, reservations: IconCalendar, messages: IconMessages, analytics: IconChart };
+const IconCalendarOff = () => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18M3 21l18-18" />
+  </svg>
+);
+
+const NAV_IDS = ['orders', 'reservations', 'messages', 'analytics', 'closedDays'];
+const ICONS = {
+  orders: IconOrders,
+  reservations: IconCalendar,
+  messages: IconMessages,
+  analytics: IconChart,
+  closedDays: IconCalendarOff,
+};
 
 const AdminSidebar = ({ activeTab, onNavigate }) => {
   const { t } = useAdminLanguage();

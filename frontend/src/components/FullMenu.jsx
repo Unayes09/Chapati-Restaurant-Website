@@ -1817,60 +1817,93 @@ const FullMenu = () => {
             </div>
             )}
 
-            {showSection('drinks') && (
-            <div className={`full-menu-section ${coveredSections.has('jomo') ? 'is-covered' : ''}`} id="jomo">
-              <h3 className="full-menu-section-title">
-                {isFr ? 'JOMO (35 cl)' : 'JOMO (35 cl)'}
-              </h3>
+{showSection('drinks') && (
+             <div className={`full-menu-section ${coveredSections.has('jomo') ? 'is-covered' : ''}`} id="jomo">
+               <h3 className="full-menu-section-title">
+                 {isFr ? 'JOMO (35 cl)' : 'JOMO (35 cl)'}
+               </h3>
+
+              <p className="full-menu-note">
+                {isFr
+                  ? 'Thé glacé bio fabriqué en France. Sain et produit de manière responsable. Choisissez une ou plusieurs saveurs :'
+                  : 'Organic iced tea made in France. Healthy and responsibly produced. Pick one or several flavors:'}
+              </p>
 
               <div className="full-menu-item">
                 <div
                   className={`full-menu-item-header ${
-                    cart['jomo'] ? 'is-selected' : ''
+                    cart['jomo-peach-hibiscus'] ? 'is-selected' : ''
                   }`}
                   onClick={() =>
-                    toggleItem('jomo', 'JOMO', 4.0)
+                    toggleItem(
+                      'jomo-peach-hibiscus',
+                      isFr ? 'JOMO — Thé blanc, pêche & hibiscus' : 'JOMO — White tea, peach & hibiscus',
+                      4.0,
+                    )
                   }
                 >
-                  <span>JOMO</span>
+                  <span>{isFr ? 'Thé blanc, pêche & hibiscus' : 'White tea, peach & hibiscus'}</span>
                   <span>€4.0</span>
                 </div>
-                <p>
-                  {isFr
-                    ? 'Thé glacé bio fabriqué en France. Sain et produit de manière responsable.'
-                    : 'Organic iced tea made in France. Healthy and responsibly produced.'}
-                </p>
               </div>
 
-              <p className="full-menu-note">
-                {isFr ? 'Saveurs :' : 'Flavors:'}
-              </p>
-              <ul className="full-menu-list">
-                <li>
-                  {isFr
-                    ? 'Thé blanc, pêche & hibiscus'
-                    : 'White tea, peach & hibiscus'}
-                </li>
-                <li>
-                  {isFr
-                    ? 'Thé maté, fruit de la passion & citron vert'
-                    : 'Maté tea, passion fruit & lime'}
-                </li>
-                <li>
-                  {isFr
-                    ? 'Thé vert, menthe & citron'
-                    : 'Green tea, mint & lemon'}
-                </li>
-                <li>
-                  {isFr
-                    ? 'Thé maté, grenade & litchi'
-                    : 'Maté tea, pomegranate & lychee'}
-                </li>
-              </ul>
-            </div>
-            )}
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['jomo-mate-passion'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'jomo-mate-passion',
+                      isFr ? 'JOMO — Thé maté, fruit de la passion & citron vert' : 'JOMO — Maté tea, passion fruit & lime',
+                      4.0,
+                    )
+                  }
+                >
+                  <span>{isFr ? 'Thé maté, fruit de la passion & citron vert' : 'Maté tea, passion fruit & lime'}</span>
+                  <span>€4.0</span>
+                </div>
+              </div>
 
-            {showSection('drinks') && (
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['jomo-green-mint'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'jomo-green-mint',
+                      isFr ? 'JOMO — Thé vert, menthe & citron' : 'JOMO — Green tea, mint & lemon',
+                      4.0,
+                    )
+                  }
+                >
+                  <span>{isFr ? 'Thé vert, menthe & citron' : 'Green tea, mint & lemon'}</span>
+                  <span>€4.0</span>
+                </div>
+              </div>
+
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['jomo-mate-pomegranate'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'jomo-mate-pomegranate',
+                      isFr ? 'JOMO — Thé maté, grenade & litchi' : 'JOMO — Maté tea, pomegranate & lychee',
+                      4.0,
+                    )
+                  }
+                >
+                  <span>{isFr ? 'Thé maté, grenade & litchi' : 'Maté tea, pomegranate & lychee'}</span>
+                  <span>€4.0</span>
+                </div>
+              </div>
+             </div>
+             )}
+
+             {showSection('drinks') && (
             <div className={`full-menu-section ${coveredSections.has('drinks') ? 'is-covered' : ''}`} id="drinks">
               <h3 className="full-menu-section-title">
                 {isFr ? 'BOISSONS' : 'DRINKS'}

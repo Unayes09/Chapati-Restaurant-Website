@@ -6,6 +6,7 @@ const en = {
     reservations: 'Reservations',
     messages: 'Messages',
     analytics: 'Analytics',
+    closedDays: 'Closed Days',
     livePanel: 'Live panel',
     brandSub: 'Admin',
   },
@@ -82,7 +83,8 @@ const en = {
     newOrderTitle: 'New order',
     newOrderQueueHint: '{n} more in queue',
     newOrderTimeout: 'Alert timed out — order is still pending. Handle it from the list.',
-    newOrderAccept: 'Accept order',
+    newOrderAccept: 'Accept',
+    newOrderAcceptAndPrint: 'Accept & Print',
     newOrderReject: 'Reject',
     newOrderLoading: 'Loading order…',
     newOrderNotFound: 'Order could not be loaded. Check the orders list.',
@@ -233,6 +235,24 @@ const en = {
   errors: {
     loginFailed: 'Login failed',
   },
+  closedDays: {
+    title: 'Closed days',
+    subtitle: 'Block the restaurant for a date range — reservations and pickup orders are rejected on those days.',
+    startDate: 'Start date',
+    endDate: 'End date',
+    reason: 'Reason (optional)',
+    reasonPh: 'e.g., Annual closure, holidays…',
+    add: 'Add closed range',
+    saving: 'Saving…',
+    saved: 'Closed range saved.',
+    loading: 'Loading…',
+    empty: 'No closed ranges yet.',
+    confirmDelete: 'Remove this closed range?',
+    errors: {
+      datesRequired: 'Start and end dates are required.',
+      endBeforeStart: 'End date must be on or after the start date.',
+    },
+  },
 };
 
 const fr = {
@@ -241,6 +261,7 @@ const fr = {
     reservations: 'Réservations',
     messages: 'Messages',
     analytics: 'Analytique',
+    closedDays: 'Jours fermés',
     livePanel: 'Panneau en direct',
     brandSub: 'Admin',
   },
@@ -317,7 +338,8 @@ const fr = {
     newOrderTitle: 'Nouvelle commande',
     newOrderQueueHint: '{n} autre(s) en attente',
     newOrderTimeout: 'Alerte expirée — la commande reste en attente. Traitez-la dans la liste.',
-    newOrderAccept: 'Accepter la commande',
+    newOrderAccept: 'Accepter',
+    newOrderAcceptAndPrint: 'Accepter & Imprimer',
     newOrderReject: 'Refuser',
     newOrderLoading: 'Chargement de la commande…',
     newOrderNotFound: 'Commande introuvable. Vérifiez la liste des commandes.',
@@ -467,6 +489,24 @@ const fr = {
   },
   errors: {
     loginFailed: 'Échec de la connexion',
+  },
+  closedDays: {
+    title: 'Jours fermés',
+    subtitle: 'Bloquez le restaurant sur une plage de dates — les réservations et commandes à emporter sont refusées ces jours-là.',
+    startDate: 'Date de début',
+    endDate: 'Date de fin',
+    reason: 'Motif (facultatif)',
+    reasonPh: 'ex. fermeture annuelle, congés…',
+    add: 'Ajouter la plage',
+    saving: 'Enregistrement…',
+    saved: 'Plage enregistrée.',
+    loading: 'Chargement…',
+    empty: 'Aucune plage fermée pour le moment.',
+    confirmDelete: 'Supprimer cette plage de fermeture ?',
+    errors: {
+      datesRequired: 'Les dates de début et de fin sont obligatoires.',
+      endBeforeStart: 'La date de fin doit être le même jour ou après la date de début.',
+    },
   },
 };
 

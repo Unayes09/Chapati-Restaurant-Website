@@ -1,3 +1,13 @@
+.modal-actions--stack .btn-accept-and-print-order {
+  flex: unset;
+  background: #0f172a;
+  border: none;
+  color: #fff;
+  box-shadow: 0 4px 14px -6px rgba(15, 23, 42, .55);
+}
+.modal-actions--stack .btn-accept-and-print-order:hover {
+  background: #1e293b;
+}
 :root {
   --primary: #e63946;
   --secondary: #ffb703;
@@ -2065,5 +2075,179 @@ body {
   }
   .analytics-kpi-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+.closed-days-panel {
+  padding: 12px 32px 48px;
+}
+
+.closed-days-header h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  letter-spacing: -.02em;
+}
+
+.closed-days-header p {
+  margin: 0 0 22px;
+  color: #64748b;
+  max-width: 720px;
+  line-height: 1.55;
+}
+
+.closed-days-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  gap: 14px;
+  align-items: end;
+  background: #ffffff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 6px 24px -16px rgba(15, 23, 42, .25);
+}
+
+.closed-days-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.closed-days-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.closed-days-field input {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.closed-days-field input:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 0;
+  border-color: #38bdf8;
+}
+
+.closed-days-field-grow {
+  grid-column: span 1;
+}
+
+.closed-days-save {
+  background: #0f172a;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  cursor: pointer;
+  height: 40px;
+}
+
+.closed-days-save:hover {
+  background: #1e293b;
+}
+
+.closed-days-save:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.closed-days-error,
+.closed-days-success {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.closed-days-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.closed-days-success {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.closed-days-list {
+  margin-top: 26px;
+}
+
+.closed-days-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.closed-days-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+
+.closed-days-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.closed-days-item-main strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.closed-days-item-reason {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.closed-days-delete {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  cursor: pointer;
+}
+
+.closed-days-delete:hover {
+  background: #fee2e2;
+}
+
+.closed-days-empty {
+  margin: 24px 0;
+  color: #64748b;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .closed-days-form {
+    grid-template-columns: 1fr;
+  }
+  .closed-days-save {
+    width: 100%;
   }
 }

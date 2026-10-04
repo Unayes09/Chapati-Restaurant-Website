@@ -1,3 +1,95 @@
+.closed-day-inline-notice {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 0 0 18px;
+}
+.closed-day-inline-notice strong {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 4px;
+}
+.closed-day-inline-notice p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #7f1d1d;
+}
+.booking-input--closed {
+  border-color: #d6333f !important;
+  background: #fff5f5;
+}
+.booking-input-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.booking-input-hint--closed {
+  color: #b91c1c;
+}
+/* Closed-day banner — sits above the navbar while active */
+.closed-day-banner {
+  background: linear-gradient(90deg, #b21d2c 0%, #d6333f 60%, #b21d2c 100%);
+  color: #fff;
+  text-align: center;
+  font-size: 14px;
+  letter-spacing: .01em;
+  padding: 12px 18px;
+  position: relative;
+  z-index: 1000;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+}
+.closed-day-banner-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  line-height: 1.45;
+}
+.closed-day-banner p {
+  margin: 0;
+}
+.closed-day-banner strong {
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: 12px;
+  font-weight: 800;
+}
+.closed-day-banner-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+.closed-day-banner-reason {
+  font-style: italic;
+  opacity: .9;
+}
+.closed-day-banner-note {
+  opacity: .92;
+}
+@media (max-width: 600px) {
+  .closed-day-banner {
+    font-size: 12px;
+    padding: 10px 14px;
+  }
+  .closed-day-banner-inner {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
 .news-card-excerpt {
   font-family: Georgia, 'Times New Roman', serif;
   font-style: italic;
