@@ -1,3 +1,70 @@
+.order-item-sauce-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.order-item-sauce-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.order-item-sauce-pill {
+  border: 1px solid #d9cebf;
+  background: #fff;
+  color: #18120f;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.order-item-sauce-pill:hover { border-color: #c89014; }
+.order-item-sauce-pill.is-active {
+  background: #18120f;
+  color: #fff;
+  border-color: #18120f;
+}
+.order-item-sauce-current {
+  font-size: 12px;
+  color: #574b40;
+}
+.order-item-sauce-current strong {
+  color: #18120f;
+  font-weight: 800;
+}
+.full-menu-bundle-row--inline {
+  margin: 6px 0 4px;
+  align-items: center;
+  gap: 10px;
+}
+.full-menu-bundle-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.full-menu-bundle-pill {
+  border: 1px solid #d9cebf;
+  background: #fff;
+  color: #18120f;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.full-menu-bundle-pill:hover {
+  border-color: #c89014;
+}
+.full-menu-bundle-pill.is-active {
+  background: #18120f;
+  color: #fff;
+  border-color: #18120f;
+}
 .closed-day-inline-notice {
   background: #fef2f2;
   color: #991b1b;

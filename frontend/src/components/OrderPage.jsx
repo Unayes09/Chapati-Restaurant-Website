@@ -4,8 +4,13 @@ import { useClosedDays } from '../hooks/useClosedDays';
 import {
   appendSpiceToLabel,
   getSpiceLevelLabel,
+  getSauceLabel,
   itemNeedsSpice,
+  itemNeedsSauce,
+  normalizeSauces,
+  SAUCE_OPTIONS,
   SPICE_LEVEL_OPTIONS,
+  DEFAULT_SAUCE,
 } from '../utils/spiceLevels.js';
 
 const normalizeSpiceLevels = (item) => {
@@ -18,7 +23,9 @@ const normalizeSpiceLevels = (item) => {
 };
 
 const normalizeOrderItems = (arr) =>
-  Array.isArray(arr) ? arr.map((item) => normalizeSpiceLevels(item)) : [];
+  Array.isArray(arr)
+    ? arr.map((item) => normalizeSauces(normalizeSpiceLevels(item)))
+    : [];
 
 const pickupOptions = [
   { value: 15, label: '15 min' },
@@ -92,16 +99,25 @@ const OrderPage = () => {
         .map((item) => {
           if (item.id !== id) return item;
           const newQty = Math.max(0, (item.qty || 0) + delta);
-          if (!itemNeedsSpice(item.id)) {
+          if (!itemNeedsSpice(item.id) && !itemNeedsSauce(item.id)) {
             return { ...item, qty: newQty };
           }
           let spiceLevels = Array.isArray(item.spiceLevels) ? [...item.spiceLevels] : [];
+          let sauces = itemNeedsSauce(item.id)
+            ? Array.isArray(item.sauces)
+              ? [...item.sauces]
+              : []
+            : undefined;
           if (delta > 0) {
             while (spiceLevels.length < newQty) spiceLevels.push('0');
+            if (sauces) while (sauces.length < newQty) sauces.push(DEFAULT_SAUCE);
           } else {
             spiceLevels = spiceLevels.slice(0, newQty);
+            if (sauces) sauces = sauces.slice(0, newQty);
           }
-          return { ...item, qty: newQty, spiceLevels };
+          const next = { ...item, qty: newQty, spiceLevels };
+          if (sauces) next.sauces = sauces;
+          return next;
         })
         .filter((item) => item.qty > 0),
     );
@@ -116,6 +132,19 @@ const OrderPage = () => {
         while (next.length < q) next.push('0');
         if (index >= 0 && index < q) next[index] = code;
         return { ...item, spiceLevels: next };
+      }),
+    );
+  };
+
+  const setSauceAtIndex = (id, index, sauceCode) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id || !itemNeedsSauce(item.id)) return item;
+        const q = item.qty || 1;
+        const next = Array.isArray(item.sauces) ? [...item.sauces] : [];
+        while (next.length < q) next.push(DEFAULT_SAUCE);
+        if (index >= 0 && index < q) next[index] = sauceCode;
+        return { ...item, sauces: next };
       }),
     );
   };
@@ -159,6 +188,13 @@ const OrderPage = () => {
         label: appendSpiceToLabel(item, isFr),
         price: item.price,
         qty: item.qty,
+        sauces: itemNeedsSauce(item.id)
+          ? (() => {
+              const arr = Array.isArray(item.sauces) ? [...item.sauces] : [];
+              while (arr.length < (item.qty || 1)) arr.push(DEFAULT_SAUCE);
+              return arr.slice(0, item.qty || 1);
+            })()
+          : undefined,
       })),
       totalAmount: total,
     };
@@ -260,12 +296,39 @@ const OrderPage = () => {
                 const isVariablePrice = item.id === 'dessert-of-the-day';
                 const lineTotal = (item.price || 0) * (item.qty || 0);
                 const needsSpice = itemNeedsSpice(item.id);
+                const needsSauce = itemNeedsSauce(item.id);
                 const spiceLevels = Array.isArray(item.spiceLevels) ? item.spiceLevels : [];
+                const sauces = Array.isArray(item.sauces) ? item.sauces : [];
                 return (
                   <div key={item.id} className="order-item-row">
                     <div className="order-item-info">
                       <h4>{item.label}</h4>
                       <p>{isFr ? 'Spécialité Chapati' : 'Chapati Specialty'}</p>
+                      {needsSauce && (item.qty || 0) > 0 && (
+                        <div className="order-item-spice-block">
+                          <span className="order-item-spice-title">
+                            {isFr ? 'Sauce (par portion)' : 'Sauce (per portion)'}
+                          </span>
+                          {Array.from({ length: item.qty || 0 }, (_, i) => (
+                            <label key={i} className="order-item-spice-line">
+                              <span className="order-item-spice-unit">
+                                {isFr ? `Portion ${i + 1}` : `Unit ${i + 1}`}
+                              </span>
+                              <select
+                                className="order-item-spice-select"
+                                value={sauces[i] || DEFAULT_SAUCE}
+                                onChange={(e) => setSauceAtIndex(item.id, i, e.target.value)}
+                              >
+                                {SAUCE_OPTIONS.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {isFr ? opt.fr : opt.en}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                       {needsSpice && (item.qty || 0) > 0 && (
                         <div className="order-item-spice-block">
                           <span className="order-item-spice-title">

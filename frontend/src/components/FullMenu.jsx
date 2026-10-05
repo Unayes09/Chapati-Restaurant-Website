@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLanguage } from '../LanguageContext';
-import { itemNeedsSpice } from '../utils/spiceLevels.js';
+import { itemNeedsSpice, itemNeedsSauce, DEFAULT_SAUCE } from '../utils/spiceLevels.js';
 
 const isLambDishValue = (dishValue) =>
   typeof dishValue === 'string' && dishValue.startsWith('lamb-');
@@ -21,6 +21,8 @@ const FullMenu = () => {
   const [naan1595Choice, setNaan1595Choice] = useState('chapati-special');
   const [naan1495Drink, setNaan1495Drink] = useState('coca-cola-33');
   const [naan1595Drink, setNaan1595Drink] = useState('coca-cola-33');
+  const [naan1495Sauce, setNaan1495Sauce] = useState('curry');
+  const [naan1595Sauce, setNaan1595Sauce] = useState('curry');
 
   const categories = useMemo(() => [
     { id: 'all', fr: 'Tout', en: 'All' },
@@ -125,9 +127,11 @@ const FullMenu = () => {
         delete next[id];
       } else {
         const needs = itemNeedsSpice(id);
-        next[id] = needs
-          ? { id, label, price, qty: 1, spiceLevels: ['0'] }
-          : { id, label, price, qty: 1 };
+        const needsSauce = itemNeedsSauce(id);
+        const entry = { id, label, price, qty: 1 };
+        if (needs) entry.spiceLevels = ['0'];
+        if (needsSauce) entry.sauces = [DEFAULT_SAUCE];
+        next[id] = entry;
       }
       return next;
     });
@@ -137,6 +141,7 @@ const FullMenu = () => {
     setCart((prev) => {
       const existing = prev[id];
       const needs = itemNeedsSpice(id);
+      const needsSauce = itemNeedsSauce(id);
       const nextQty = existing?.qty ?? 1;
       let spiceLevels;
       if (needs) {
@@ -147,13 +152,30 @@ const FullMenu = () => {
           spiceLevels = Array(nextQty).fill('0');
         }
       }
-      if (existing && existing.label === label && existing.price === price) {
-        if (!needs) return prev;
-        if (JSON.stringify(existing.spiceLevels) === JSON.stringify(spiceLevels)) return prev;
+      const prevSauces = needsSauce && Array.isArray(existing?.sauces)
+        ? existing.sauces
+        : undefined;
+      if (
+        existing &&
+        existing.label === label &&
+        existing.price === price
+      ) {
+        if (!needs && !needsSauce) return prev;
+        const sameSpice =
+          !needs ||
+          JSON.stringify(existing.spiceLevels) === JSON.stringify(spiceLevels);
+        const sameSauce =
+          !needsSauce ||
+          (Array.isArray(prevSauces) && prevSauces.length === nextQty);
+        if (sameSpice && sameSauce) return prev;
       }
-      const entry = needs
-        ? { id, label, price, qty: nextQty, spiceLevels }
-        : { id, label, price, qty: nextQty };
+      const entry = { id, label, price, qty: nextQty };
+      if (needs) entry.spiceLevels = spiceLevels;
+      if (needsSauce) {
+        entry.sauces = Array.isArray(prevSauces) && prevSauces.length === nextQty
+          ? prevSauces
+          : Array(nextQty).fill(DEFAULT_SAUCE);
+      }
       return { ...prev, [id]: entry };
     });
   };
@@ -261,25 +283,35 @@ const FullMenu = () => {
     [],
   );
 
-  /** Drinks for Menu Naan Sandwich — all drinks except mango/rose lassi and beer */
+  /** Drinks for Menu Naan Sandwich — all drinks except lassis and beer */
   const naanMenuDrinkOptions = useMemo(
     () => [
       { value: 'coca-cola-33', fr: 'Coca-Cola (33 cl)', en: 'Coca-Cola (33 cl)' },
       { value: 'coca-cola-zero-33', fr: 'Coca-Cola Zero Sugar (33 cl)', en: 'Coca-Cola Zero Sugar (33 cl)' },
-      { value: 'fuze-tea-or-tropico-33', fr: 'Fuze Tea or Tropico (33 cl)', en: 'Fuze Tea or Tropico (33 cl)' },
-      { value: 'sprite-or-fanta-33', fr: 'Sprite or Fanta (33 cl)', en: 'Sprite or Fanta (33 cl)' },
+      { value: 'fuze-tea-33', fr: 'Fuze Tea (33 cl)', en: 'Fuze Tea (33 cl)' },
+      { value: 'tropico-33', fr: 'Tropico (33 cl)', en: 'Tropico (33 cl)' },
+      { value: 'sprite-33', fr: 'Sprite (33 cl)', en: 'Sprite (33 cl)' },
+      { value: 'fanta-33', fr: 'Fanta (33 cl)', en: 'Fanta (33 cl)' },
       { value: 'apple-juice-25', fr: 'Apple Juice (25 cl)', en: 'Apple Juice (25 cl)' },
-      {
-        value: 'still-or-sparkling-water',
-        fr: 'Eau plate (50 cl) ou pétillante (33 cl)',
-        en: 'Still Water (50 cl) or Sparkling Water (33 cl)',
-      },
+      { value: 'still-water-50', fr: 'Eau plate (50 cl)', en: 'Still Water (50 cl)' },
+      { value: 'sparkling-water-33', fr: 'Eau pétillante (33 cl)', en: 'Sparkling Water (33 cl)' },
     ],
     [],
   );
 
   const getNaanMenuDrinkLabel = (drinkValue) =>
     naanMenuDrinkOptions.find((o) => o.value === drinkValue)?.[isFr ? 'fr' : 'en'] || '';
+
+  const naanSauceOptions = useMemo(
+    () => [
+      { value: 'curry', fr: 'Sauce curry', en: 'Curry sauce' },
+      { value: 'mint', fr: 'Sauce menthe fraîche', en: 'Mint sauce' },
+    ],
+    [],
+  );
+
+  const getNaanSauceLabel = (sauceValue) =>
+    naanSauceOptions.find((o) => o.value === sauceValue)?.[isFr ? 'fr' : 'en'] || '';
 
   const clearNaanMenuFromCart = (priceTier) => {
     setCart((prev) => {
@@ -292,25 +324,25 @@ const FullMenu = () => {
     });
   };
 
-  const buildNaanMenuLabel = (priceLabel, sandwichValue, drinkValue) => {
+  const buildNaanMenuLabel = (priceLabel, sandwichValue, drinkValue, sauceValue) => {
     const sandwichLabel =
       (priceLabel === '1495' ? naan1495Options : naan1595Options).find((o) => o.value === sandwichValue)?.[
         isFr ? 'fr' : 'en'
       ] || '';
     const drinkLabel = getNaanMenuDrinkLabel(drinkValue);
     return isFr
-      ? `Menu Naan Sandwich (${priceLabel === '1495' ? '14,95' : '15,95'}€) – ${sandwichLabel}, Boisson: ${drinkLabel}`
-      : `Naan Sandwich Menu (€${priceLabel === '1495' ? '14.95' : '15.95'}) – ${sandwichLabel}, Drink: ${drinkLabel}`;
+      ? `Menu Naan Sandwich (${priceLabel === '1495' ? '14,95' : '15,95'}€) – ${sandwichLabel}, Sauce: ${getNaanSauceLabel(sauceValue)}, Boisson: ${drinkLabel}`
+      : `Naan Sandwich Menu (€${priceLabel === '1495' ? '14.95' : '15.95'}) – ${sandwichLabel}, Drink: ${drinkLabel}, Sauce: ${getNaanSauceLabel(sauceValue)}`;
   };
 
   const naan1495Label = useMemo(
-    () => buildNaanMenuLabel('1495', naan1495Choice, naan1495Drink),
-    [isFr, naan1495Choice, naan1495Drink, naan1495Options, naanMenuDrinkOptions],
+    () => buildNaanMenuLabel('1495', naan1495Choice, naan1495Drink, naan1495Sauce),
+    [isFr, naan1495Choice, naan1495Drink, naan1495Sauce, naan1495Options, naanMenuDrinkOptions, naanSauceOptions],
   );
 
   const naan1595Label = useMemo(
-    () => buildNaanMenuLabel('1595', naan1595Choice, naan1595Drink),
-    [isFr, naan1595Choice, naan1595Drink, naan1595Options, naanMenuDrinkOptions],
+    () => buildNaanMenuLabel('1595', naan1595Choice, naan1595Drink, naan1595Sauce),
+    [isFr, naan1595Choice, naan1595Drink, naan1595Sauce, naan1595Options, naanMenuDrinkOptions, naanSauceOptions],
   );
 
   const naan1495CartId = useMemo(
@@ -553,6 +585,23 @@ const FullMenu = () => {
                       ))}
                     </div>
                     <div className="full-menu-bundle-row">
+                      <span className="full-menu-bundle-label">{isFr ? 'Sauce *' : 'Sauce *'}</span>
+                      <select
+                        className="full-menu-bundle-select"
+                        value={naan1495Sauce}
+                        onChange={(e) => {
+                          clearNaanMenuFromCart('1495');
+                          setNaan1495Sauce(e.target.value);
+                        }}
+                      >
+                        {naanSauceOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {isFr ? opt.fr : opt.en}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="full-menu-bundle-row">
                       <span className="full-menu-bundle-label">{isFr ? 'Boisson *' : 'Drink *'}</span>
                       <select
                         className="full-menu-bundle-select"
@@ -609,6 +658,23 @@ const FullMenu = () => {
                           <span>{isFr ? opt.fr : opt.en}</span>
                         </label>
                       ))}
+                    </div>
+                    <div className="full-menu-bundle-row">
+                      <span className="full-menu-bundle-label">{isFr ? 'Sauce *' : 'Sauce *'}</span>
+                      <select
+                        className="full-menu-bundle-select"
+                        value={naan1595Sauce}
+                        onChange={(e) => {
+                          clearNaanMenuFromCart('1595');
+                          setNaan1595Sauce(e.target.value);
+                        }}
+                      >
+                        {naanSauceOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {isFr ? opt.fr : opt.en}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div className="full-menu-bundle-row">
                       <span className="full-menu-bundle-label">{isFr ? 'Boisson *' : 'Drink *'}</span>
@@ -1352,9 +1418,7 @@ const FullMenu = () => {
                   className={`full-menu-item-header ${
                     cart['fried-naan'] ? 'is-selected' : ''
                   }`}
-                  onClick={() =>
-                    toggleItem('fried-naan', 'Fried Naan', 9.9)
-                  }
+                  onClick={() => toggleItem('fried-naan', 'Fried Naan', 9.9)}
                 >
                   <span>Fried Naan</span>
                   <span>€9.9</span>
@@ -1371,9 +1435,7 @@ const FullMenu = () => {
                   className={`full-menu-item-header ${
                     cart['chapati-special'] ? 'is-selected' : ''
                   }`}
-                  onClick={() =>
-                    toggleItem('chapati-special', 'Chapati Special', 11.9)
-                  }
+                  onClick={() => toggleItem('chapati-special', 'Chapati Special', 11.9)}
                 >
                   <span>Chapati Special</span>
                   <span>€11.9</span>
@@ -1390,13 +1452,7 @@ const FullMenu = () => {
                   className={`full-menu-item-header ${
                     cart['curry-tikka-naan'] ? 'is-selected' : ''
                   }`}
-                  onClick={() =>
-                    toggleItem(
-                      'curry-tikka-naan',
-                      'Curry Tikka Naan',
-                      11.9,
-                    )
-                  }
+                  onClick={() => toggleItem('curry-tikka-naan', 'Curry Tikka Naan', 11.9)}
                 >
                   <span>Curry Tikka Naan</span>
                   <span>€11.9</span>
@@ -1413,9 +1469,7 @@ const FullMenu = () => {
                   className={`full-menu-item-header ${
                     cart['vegetable-naan'] ? 'is-selected' : ''
                   }`}
-                  onClick={() =>
-                    toggleItem('vegetable-naan', 'Vegetable Naan', 9.9)
-                  }
+                  onClick={() => toggleItem('vegetable-naan', 'Vegetable Naan', 9.9)}
                 >
                   <span>Vegetable Naan</span>
                   <span>€9.9</span>
@@ -1912,23 +1966,46 @@ const FullMenu = () => {
               <div className="full-menu-item">
                 <div
                   className={`full-menu-item-header ${
-                    cart['mango-or-rose-lassi'] ? 'is-selected' : ''
+                    cart['mango-lassi'] ? 'is-selected' : ''
                   }`}
                   onClick={() =>
                     toggleItem(
-                      'mango-or-rose-lassi',
-                      'Mango or Rose Lassi',
+                      'mango-lassi',
+                      isFr ? 'Lassi mangue' : 'Mango Lassi',
                       5.5,
                     )
                   }
                 >
-                  <span>Mango or Rose Lassi</span>
+                  <span>{isFr ? 'Lassi mangue' : 'Mango Lassi'}</span>
                   <span>€5.5</span>
                 </div>
                 <p>
                   {isFr
-                    ? 'Lassi mangue ou rose.'
-                    : 'Mango or rose lassi.'}
+                    ? 'Lassi à la mangue, onctueux et légèrement sucré.'
+                    : 'Creamy, lightly sweet mango lassi.'}
+                </p>
+              </div>
+
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['rose-lassi'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'rose-lassi',
+                      isFr ? 'Lassi à la rose' : 'Rose Lassi',
+                      5.5,
+                    )
+                  }
+                >
+                  <span>{isFr ? 'Lassi à la rose' : 'Rose Lassi'}</span>
+                  <span>€5.5</span>
+                </div>
+                <p>
+                  {isFr
+                    ? 'Lassi parfumé à la rose, frais et délicat.'
+                    : 'Delicately floral, chilled rose lassi.'}
                 </p>
               </div>
 
@@ -1996,43 +2073,77 @@ const FullMenu = () => {
               <div className="full-menu-item">
                 <div
                   className={`full-menu-item-header ${
-                    cart['fuze-tea-or-tropico-33'] ? 'is-selected' : ''
+                    cart['fuze-tea-33'] ? 'is-selected' : ''
                   }`}
                   onClick={() =>
                     toggleItem(
-                      'fuze-tea-or-tropico-33',
-                      'Fuze Tea or Tropico (33 cl)',
+                      'fuze-tea-33',
+                      'Fuze Tea (33 cl)',
                       2.5,
                     )
                   }
                 >
-                  <span>Fuze Tea or Tropico (33 cl)</span>
+                  <span>Fuze Tea (33 cl)</span>
                   <span>€2.5</span>
                 </div>
-                <p>
-                  {isFr ? 'Fuze Tea ou Tropico 33 cl.' : 'Fuze Tea or Tropico 33 cl.'}
-                </p>
+                <p>{isFr ? 'Fuze Tea 33 cl.' : 'Fuze Tea 33 cl.'}</p>
               </div>
 
               <div className="full-menu-item">
                 <div
                   className={`full-menu-item-header ${
-                    cart['sprite-or-fanta-33'] ? 'is-selected' : ''
+                    cart['tropico-33'] ? 'is-selected' : ''
                   }`}
                   onClick={() =>
                     toggleItem(
-                      'sprite-or-fanta-33',
-                      'Sprite or Fanta (33 cl)',
+                      'tropico-33',
+                      'Tropico (33 cl)',
                       2.5,
                     )
                   }
                 >
-                  <span>Sprite or Fanta (33 cl)</span>
+                  <span>Tropico (33 cl)</span>
                   <span>€2.5</span>
                 </div>
-                <p>
-                  {isFr ? 'Sprite ou Fanta 33 cl.' : 'Sprite or Fanta 33 cl.'}
-                </p>
+                <p>{isFr ? 'Tropico 33 cl.' : 'Tropico 33 cl.'}</p>
+              </div>
+
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['sprite-33'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'sprite-33',
+                      'Sprite (33 cl)',
+                      2.5,
+                    )
+                  }
+                >
+                  <span>Sprite (33 cl)</span>
+                  <span>€2.5</span>
+                </div>
+                <p>{isFr ? 'Sprite 33 cl.' : 'Sprite 33 cl.'}</p>
+              </div>
+
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['fanta-33'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'fanta-33',
+                      'Fanta (33 cl)',
+                      2.5,
+                    )
+                  }
+                >
+                  <span>Fanta (33 cl)</span>
+                  <span>€2.5</span>
+                </div>
+                <p>{isFr ? 'Fanta 33 cl.' : 'Fanta 33 cl.'}</p>
               </div>
 
               <div className="full-menu-item">
@@ -2055,24 +2166,39 @@ const FullMenu = () => {
               <div className="full-menu-item">
                 <div
                   className={`full-menu-item-header ${
-                    cart['still-or-sparkling-water'] ? 'is-selected' : ''
+                    cart['still-water-50'] ? 'is-selected' : ''
                   }`}
                   onClick={() =>
                     toggleItem(
-                      'still-or-sparkling-water',
-                      'Still Water (50 cl) or Sparkling Water (33 cl)',
+                      'still-water-50',
+                      isFr ? 'Eau plate (50 cl)' : 'Still Water (50 cl)',
                       2.0,
                     )
                   }
                 >
-                  <span>Still Water (50 cl) or Sparkling Water (33 cl)</span>
+                  <span>{isFr ? 'Eau plate (50 cl)' : 'Still Water (50 cl)'}</span>
                   <span>€2.0</span>
                 </div>
-                <p>
-                  {isFr
-                    ? 'Eau plate 50 cl ou eau pétillante 33 cl.'
-                    : 'Still water 50 cl or sparkling water 33 cl.'}
-                </p>
+                <p>{isFr ? 'Eau plate 50 cl.' : 'Still water 50 cl.'}</p>
+              </div>
+
+              <div className="full-menu-item">
+                <div
+                  className={`full-menu-item-header ${
+                    cart['sparkling-water-33'] ? 'is-selected' : ''
+                  }`}
+                  onClick={() =>
+                    toggleItem(
+                      'sparkling-water-33',
+                      isFr ? 'Eau pétillante (33 cl)' : 'Sparkling Water (33 cl)',
+                      2.0,
+                    )
+                  }
+                >
+                  <span>{isFr ? 'Eau pétillante (33 cl)' : 'Sparkling Water (33 cl)'}</span>
+                  <span>€2.0</span>
+                </div>
+                <p>{isFr ? 'Eau pétillante 33 cl.' : 'Sparkling water 33 cl.'}</p>
               </div>
             </div>
             )}
