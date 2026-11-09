@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAdminLanguage } from '../AdminLanguageContext.jsx';
 import { buildReceiptHtml, printReceiptSilently } from '../utils/printReceipt.js';
+import { formatItemLabelForDisplay } from '../utils/spiceLevels.js';
 
 const escapeHtml = (value) => {
   if (value == null) return '';
