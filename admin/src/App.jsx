@@ -12,6 +12,7 @@ import ReservationsPanel from './components/ReservationsPanel';
 import MessagesPanel from './components/MessagesPanel';
 import AnalyticsPanel from './components/AnalyticsPanel';
 import ClosedDaysPanel from './components/ClosedDaysPanel';
+import PosDevicesPanel from './components/PosDevicesPanel';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -465,6 +466,8 @@ function App() {
           <AnalyticsPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
         ) : activeTab === 'closedDays' ? (
           <ClosedDaysPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
+        ) : activeTab === 'posDevices' ? (
+          <PosDevicesPanel token={token} apiUrl={API_URL} onUnauthorized={handleLogout} refreshTick={refreshTick} />
         ) : (
         <>
         <section className="admin-controls">

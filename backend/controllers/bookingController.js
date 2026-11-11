@@ -1,6 +1,8 @@
 const Booking = require('../models/Booking');
+const PosDevice = require('../models/PosDevice');
 const sendEmail = require('../utils/email');
 const { isDateClosed, todayParis } = require('../utils/closedDays');
+const { sendOrderToPosDevices } = require('../utils/firebase');
 
 const formatParisTime = (date) =>
   new Date(date).toLocaleTimeString('fr-FR', {
@@ -85,6 +87,39 @@ const createBooking = async (req, res) => {
         orderCode: booking.orderCode,
         createdAt: booking.createdAt,
       });
+    }
+
+    if (booking.orderType === 'pickup') {
+      try {
+        const registeredDevices = await PosDevice.find(
+          { active: true },
+          { firebaseId: 1 },
+        ).lean();
+        // Keep the old environment ID as a migration fallback. Set removes
+        // duplicates when the same device is also registered in MongoDB.
+        const firebaseIds = registeredDevices.map((device) => device.firebaseId);
+        if (process.env.POS_PRINTER_FCM_FID) {
+          firebaseIds.push(process.env.POS_PRINTER_FCM_FID);
+        }
+
+        const pushResult = await sendOrderToPosDevices({
+          fids: firebaseIds,
+          orderId: booking.orderCode || booking._id,
+          customerName: booking.customer.name,
+          items: booking.items,
+          totalAmount: booking.totalAmount,
+        });
+        console.log(
+          `[booking] POS print messages: ${pushResult.successCount} sent, ${pushResult.failureCount} failed`,
+        );
+        if (pushResult.failures.length > 0) {
+          console.error('[booking] POS device failures:', pushResult.failures);
+        }
+      } catch (pushError) {
+        // The order has already been stored. A printer/FCM failure must not
+        // turn a successful customer order into an HTTP error.
+        console.error('[booking] POS print message failed:', pushError);
+      }
     }
 
     const safeItems = Array.isArray(items) ? items : [];

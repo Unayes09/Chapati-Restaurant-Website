@@ -53,6 +53,7 @@ const bookingSchema = new mongoose.Schema({
     {
       id: { type: String, required: true },
       label: { type: String, required: true },
+      printLabel: { type: String },
       price: { type: Number }, // Not mandatory for all items
       qty: { type: Number, required: true },
     }

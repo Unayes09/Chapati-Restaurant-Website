@@ -120,7 +120,7 @@ const FullMenu = () => {
     };
   }, [activeFilter, coveredSections.size]); // Re-run when filter changes to update visibility check
 
-  const toggleItem = (id, label, price) => {
+  const toggleItem = (id, label, price, englishLabel = label) => {
     setCart((prev) => {
       const next = { ...prev };
       if (next[id]) {
@@ -128,7 +128,7 @@ const FullMenu = () => {
       } else {
         const needs = itemNeedsSpice(id);
         const needsSauce = itemNeedsSauce(id);
-        const entry = { id, label, price, qty: 1 };
+        const entry = { id, label, englishLabel, price, qty: 1 };
         if (needs) entry.spiceLevels = ['0'];
         if (needsSauce) entry.sauces = [DEFAULT_SAUCE];
         next[id] = entry;
@@ -137,7 +137,7 @@ const FullMenu = () => {
     });
   };
 
-  const upsertItem = (id, label, price) => {
+  const upsertItem = (id, label, price, englishLabel = label) => {
     setCart((prev) => {
       const existing = prev[id];
       const needs = itemNeedsSpice(id);
@@ -158,6 +158,7 @@ const FullMenu = () => {
       if (
         existing &&
         existing.label === label &&
+        existing.englishLabel === englishLabel &&
         existing.price === price
       ) {
         if (!needs && !needsSauce) return prev;
@@ -169,7 +170,7 @@ const FullMenu = () => {
           (Array.isArray(prevSauces) && prevSauces.length === nextQty);
         if (sameSpice && sameSauce) return prev;
       }
-      const entry = { id, label, price, qty: nextQty };
+      const entry = { id, label, englishLabel, price, qty: nextQty };
       if (needs) entry.spiceLevels = spiceLevels;
       if (needsSauce) {
         entry.sauces = Array.isArray(prevSauces) && prevSauces.length === nextQty
@@ -244,16 +245,16 @@ const FullMenu = () => {
     [],
   );
 
-  const buildSagorikaLabel = (starterValue, mainValue, mainDishValue, dessertValue) => {
-    const starterLabel = sagorikaStarterOptions.find((o) => o.value === starterValue)?.[isFr ? 'fr' : 'en'] || '';
-    const mainLabel = sagorikaMainOptions.find((o) => o.value === mainValue)?.[isFr ? 'fr' : 'en'] || '';
+  const buildSagorikaLabel = (starterValue, mainValue, mainDishValue, dessertValue, useFrench = isFr) => {
+    const starterLabel = sagorikaStarterOptions.find((o) => o.value === starterValue)?.[useFrench ? 'fr' : 'en'] || '';
+    const mainLabel = sagorikaMainOptions.find((o) => o.value === mainValue)?.[useFrench ? 'fr' : 'en'] || '';
     const mainDishOptions = getSagorikaMainDishOptions(mainValue);
-    const mainDishLabel = mainDishOptions.find((o) => o.value === mainDishValue)?.[isFr ? 'fr' : 'en'] || '';
-    const dessertLabel = sagorikaDessertOptions.find((o) => o.value === dessertValue)?.[isFr ? 'fr' : 'en'] || '';
+    const mainDishLabel = mainDishOptions.find((o) => o.value === mainDishValue)?.[useFrench ? 'fr' : 'en'] || '';
+    const dessertLabel = sagorikaDessertOptions.find((o) => o.value === dessertValue)?.[useFrench ? 'fr' : 'en'] || '';
     const lambExtra = isLambDishValue(mainDishValue)
-      ? (isFr ? ', supplément agneau +2 €' : ', lamb +€2')
+      ? (useFrench ? ', supplément agneau +2 €' : ', lamb +€2')
       : '';
-    return isFr
+    return useFrench
       ? `Menu Sagorika (Entrée: ${starterLabel}, Plat: ${mainLabel} – ${mainDishLabel}${lambExtra}, Dessert: ${dessertLabel})`
       : `Menu Sagorika (Starter: ${starterLabel}, Main: ${mainLabel} – ${mainDishLabel}${lambExtra}, Dessert: ${dessertLabel})`;
   };
@@ -261,6 +262,13 @@ const FullMenu = () => {
   const getSagorikaPrice = (mainDishValue) => 24.9 + (isLambDishValue(mainDishValue) ? 2 : 0);
 
   const sagorikaLabel = buildSagorikaLabel(sagorikaStarter, sagorikaMain, sagorikaMainDish, sagorikaDessert);
+  const sagorikaEnglishLabel = buildSagorikaLabel(
+    sagorikaStarter,
+    sagorikaMain,
+    sagorikaMainDish,
+    sagorikaDessert,
+    false,
+  );
   const sagorikaPrice = getSagorikaPrice(sagorikaMainDish);
   const sagorikaCartId = useMemo(
     () => `menu-sagorika__${sagorikaStarter}__${sagorikaMain}__${sagorikaMainDish}__${sagorikaDessert}`,
@@ -299,9 +307,6 @@ const FullMenu = () => {
     [],
   );
 
-  const getNaanMenuDrinkLabel = (drinkValue) =>
-    naanMenuDrinkOptions.find((o) => o.value === drinkValue)?.[isFr ? 'fr' : 'en'] || '';
-
   const naanSauceOptions = useMemo(
     () => [
       { value: 'curry', fr: 'Sauce curry', en: 'Curry sauce' },
@@ -309,9 +314,6 @@ const FullMenu = () => {
     ],
     [],
   );
-
-  const getNaanSauceLabel = (sauceValue) =>
-    naanSauceOptions.find((o) => o.value === sauceValue)?.[isFr ? 'fr' : 'en'] || '';
 
   const clearNaanMenuFromCart = (priceTier) => {
     setCart((prev) => {
@@ -324,25 +326,44 @@ const FullMenu = () => {
     });
   };
 
-  const buildNaanMenuLabel = (priceLabel, sandwichValue, drinkValue, sauceValue) => {
+  const buildNaanMenuLabel = (priceLabel, sandwichValue, drinkValue, sauceValue, useFrench = isFr) => {
     const sandwichLabel =
       (priceLabel === '1495' ? naan1495Options : naan1595Options).find((o) => o.value === sandwichValue)?.[
-        isFr ? 'fr' : 'en'
+        useFrench ? 'fr' : 'en'
       ] || '';
-    const drinkLabel = getNaanMenuDrinkLabel(drinkValue);
-    return isFr
-      ? `Menu Naan Sandwich (${priceLabel === '1495' ? '14,95' : '15,95'}€) – ${sandwichLabel}, Sauce: ${getNaanSauceLabel(sauceValue)}, Boisson: ${drinkLabel}`
-      : `Naan Sandwich Menu (€${priceLabel === '1495' ? '14.95' : '15.95'}) – ${sandwichLabel}, Drink: ${drinkLabel}, Sauce: ${getNaanSauceLabel(sauceValue)}`;
+    const drinkLabel = naanMenuDrinkOptions.find((o) => o.value === drinkValue)?.[useFrench ? 'fr' : 'en'] || '';
+    const sauceLabel = naanSauceOptions.find((o) => o.value === sauceValue)?.[useFrench ? 'fr' : 'en'] || '';
+    return useFrench
+      ? `Menu Naan Sandwich (${priceLabel === '1495' ? '14,95' : '15,95'}€) – ${sandwichLabel}, Sauce: ${sauceLabel}, Boisson: ${drinkLabel}`
+      : `Naan Sandwich Menu (€${priceLabel === '1495' ? '14.95' : '15.95'}) – ${sandwichLabel}, Drink: ${drinkLabel}, Sauce: ${sauceLabel}`;
   };
 
-  const naan1495Label = useMemo(
-    () => buildNaanMenuLabel('1495', naan1495Choice, naan1495Drink, naan1495Sauce),
-    [isFr, naan1495Choice, naan1495Drink, naan1495Sauce, naan1495Options, naanMenuDrinkOptions, naanSauceOptions],
+  const naan1495Label = buildNaanMenuLabel(
+    '1495',
+    naan1495Choice,
+    naan1495Drink,
+    naan1495Sauce,
   );
 
-  const naan1595Label = useMemo(
-    () => buildNaanMenuLabel('1595', naan1595Choice, naan1595Drink, naan1595Sauce),
-    [isFr, naan1595Choice, naan1595Drink, naan1595Sauce, naan1595Options, naanMenuDrinkOptions, naanSauceOptions],
+  const naan1595Label = buildNaanMenuLabel(
+    '1595',
+    naan1595Choice,
+    naan1595Drink,
+    naan1595Sauce,
+  );
+  const naan1495EnglishLabel = buildNaanMenuLabel(
+    '1495',
+    naan1495Choice,
+    naan1495Drink,
+    naan1495Sauce,
+    false,
+  );
+  const naan1595EnglishLabel = buildNaanMenuLabel(
+    '1595',
+    naan1595Choice,
+    naan1595Drink,
+    naan1595Sauce,
+    false,
   );
 
   const naan1495CartId = useMemo(
@@ -538,7 +559,7 @@ const FullMenu = () => {
                     <button
                       type="button"
                       className="full-menu-bundle-btn"
-                      onClick={() => upsertItem(sagorikaCartId, sagorikaLabel, sagorikaPrice)}
+                      onClick={() => upsertItem(sagorikaCartId, sagorikaLabel, sagorikaPrice, sagorikaEnglishLabel)}
                     >
                       {isFr ? `Ajouter au panier – ${sagorikaPrice.toFixed(2).replace('.', ',')} €` : `Add to cart – €${sagorikaPrice.toFixed(2)}`}
                     </button>
@@ -630,7 +651,7 @@ const FullMenu = () => {
                       <button
                         type="button"
                         className="full-menu-bundle-btn"
-                        onClick={() => upsertItem(naan1495CartId, naan1495Label, 14.95)}
+                        onClick={() => upsertItem(naan1495CartId, naan1495Label, 14.95, naan1495EnglishLabel)}
                       >
                         {isFr ? 'Ajouter' : 'Add'}
                       </button>
@@ -705,7 +726,7 @@ const FullMenu = () => {
                       <button
                         type="button"
                         className="full-menu-bundle-btn"
-                        onClick={() => upsertItem(naan1595CartId, naan1595Label, 15.95)}
+                        onClick={() => upsertItem(naan1595CartId, naan1595Label, 15.95, naan1595EnglishLabel)}
                       >
                         {isFr ? 'Ajouter' : 'Add'}
                       </button>

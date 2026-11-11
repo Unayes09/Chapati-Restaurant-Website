@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1023081181353",
+    "project_id": "chapati35-pos",
+    "storage_bucket": "chapati35-pos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1023081181353:android:286ff35a80f873cfe7f9b8",
+        "android_client_info": {
+          "package_name": "com.chapati35.pos_printer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4MBlUoTyu4z2CgsKlC8aoOmwdJd5QGJw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

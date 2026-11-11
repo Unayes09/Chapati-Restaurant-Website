@@ -2251,3 +2251,239 @@ body {
     width: 100%;
   }
 }
+
+/* POS printer device registry */
+.pos-devices-panel {
+  padding: 12px 32px 48px;
+}
+
+.pos-devices-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.pos-devices-header h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  letter-spacing: -.02em;
+}
+
+.pos-devices-header p {
+  margin: 0;
+  color: #64748b;
+  max-width: 760px;
+  line-height: 1.55;
+}
+
+.pos-devices-count {
+  flex-shrink: 0;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.pos-devices-form {
+  display: grid;
+  grid-template-columns: minmax(180px, .75fr) minmax(320px, 2fr) auto;
+  gap: 14px;
+  align-items: end;
+  background: #fff;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px -16px rgba(15, 23, 42, .25);
+}
+
+.pos-devices-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pos-devices-field label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.pos-devices-field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.pos-devices-field input:focus {
+  outline: 2px solid #38bdf8;
+  border-color: #38bdf8;
+}
+
+.pos-devices-add {
+  height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #fff;
+  padding: 0 18px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pos-devices-add:hover { background: #1e293b; }
+.pos-devices-add:disabled { cursor: not-allowed; opacity: .6; }
+
+.pos-devices-alert {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.pos-devices-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.pos-devices-alert-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #047857;
+}
+
+.pos-devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.pos-devices-empty {
+  color: #64748b;
+  font-style: italic;
+}
+
+.pos-device-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.pos-device-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.pos-device-title-row,
+.pos-device-id-row,
+.pos-device-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pos-device-title-row h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.pos-device-status {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.pos-device-status.is-active { background: #dcfce7; color: #166534; }
+.pos-device-status.is-disabled { background: #f1f5f9; color: #64748b; }
+
+.pos-device-id-row {
+  margin: 9px 0 7px;
+}
+
+.pos-device-id-row code {
+  display: block;
+  max-width: min(100%, 780px);
+  overflow: hidden;
+  color: #334155;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-device-id-row button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pos-device-main small { color: #94a3b8; }
+
+.pos-device-actions { flex-shrink: 0; }
+
+.pos-device-actions button {
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pos-device-toggle {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.pos-device-delete {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.pos-device-actions button:disabled { cursor: not-allowed; opacity: .55; }
+
+@media (max-width: 900px) {
+  .pos-devices-form { grid-template-columns: 1fr; }
+  .pos-devices-add { width: 100%; }
+}
+
+@media (max-width: 640px) {
+  .pos-devices-panel { padding: 12px 0 32px; }
+  .pos-devices-header,
+  .pos-device-card { align-items: stretch; flex-direction: column; }
+  .pos-devices-count { align-self: flex-start; }
+  .pos-device-actions { width: 100%; }
+  .pos-device-actions button { flex: 1; }
+  .pos-device-id-row { align-items: flex-start; flex-direction: column; }
+  .pos-device-id-row code { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+}

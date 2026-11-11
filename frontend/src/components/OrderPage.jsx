@@ -4,7 +4,6 @@ import { useClosedDays } from '../hooks/useClosedDays';
 import {
   appendSpiceToLabel,
   getSpiceLevelLabel,
-  getSauceLabel,
   itemNeedsSpice,
   itemNeedsSauce,
   normalizeSauces,
@@ -186,6 +185,11 @@ const OrderPage = () => {
       items: items.map((item) => ({
         id: item.id,
         label: appendSpiceToLabel(item, isFr),
+        // Receipt text is always English, regardless of storefront language.
+        printLabel: appendSpiceToLabel(
+          { ...item, label: item.englishLabel || item.label },
+          false,
+        ),
         price: item.price,
         qty: item.qty,
         sauces: itemNeedsSauce(item.id)
